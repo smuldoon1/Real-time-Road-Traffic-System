@@ -9,13 +9,30 @@ public class Road : MonoBehaviour
 
     public Vector3[] curvePoints;
 
+    public void UpdatePoints()
+    {
+        if (nodeA == null || nodeB == null)
+            return;
+        nodeA.SetPosition(curvePoints[0]);
+        nodeB.SetPosition(curvePoints[3]);
+    }
+
+    public Vector3 GetPoint(float t)
+    {
+        return transform.TransformPoint(BezierCurve.GetPoint(curvePoints[0], curvePoints[1], curvePoints[2], curvePoints[3], t));
+    }
+
     public void Reset()
     {
-        curvePoints = new Vector3[]
+        if (nodeA == null || nodeB == null)
         {
-            nodeA.Position,
-            nodeA.Position + nodeB.Position / 2f,
-            nodeB.Position
-        };
+            curvePoints = new Vector3[]
+            {
+                nodeA.Position,
+                nodeA.Position + nodeB.Position * .33f,
+                nodeA.Position + nodeB.Position * .67f,
+                nodeB.Position
+            };
+        }
     }
 }
