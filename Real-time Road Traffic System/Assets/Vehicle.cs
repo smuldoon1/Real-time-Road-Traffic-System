@@ -7,34 +7,46 @@ public class Vehicle : MonoBehaviour
     public float accelerationForce;
     public float brakeForce;
     public float steerForce;
+    public float maxSteeringAngle;
 
-    public Rigidbody[] frontWheels = new Rigidbody[2];
-    public Rigidbody frontAxle;
+    public Transform[] driveWheels;
 
     Rigidbody rb;
+
+    float steeringAngle;
+    float drivingAngle;
+
+    Vector3 turningPoint;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
     }
 
+    private void Start()
+    {
+        turningPoint = new Vector3();
+        foreach (Transform t in driveWheels)
+            turningPoint += t.position;
+        turningPoint /= driveWheels.Length;
+    }
+
     public void Accelerate(float accelerationAmount)
     {
-        //rb.AddRelativeForce(Vector3.forward * accelerationAmount);
-        AddWheelTorque(frontWheels[0], accelerationAmount, 1);
-        AddWheelTorque(frontWheels[1], accelerationAmount, 1);
+        rb.AddRelativeForce(Vector3.forward * accelerationAmount);
     }
 
     public void Brake(float brakeAmount)
     {
-        //rb.AddRelativeForce(Vector3.back * brakeAmount);
-        AddWheelTorque(frontWheels[0], brakeAmount, -1);
-        AddWheelTorque(frontWheels[1], brakeAmount, -1);
+        rb.AddRelativeForce(Vector3.back * brakeAmount);
     }
 
     public void Steer(float direction)
     {
-        SteerWheel(frontAxle, direction);
+        steeringAngle = Mathf.Clamp(steeringAngle + direction, -maxSteeringAngle, maxSteeringAngle);
+
+        RotateWheel(driveWheels[0]);
+        RotateWheel(driveWheels[1]);
     }
 
     public void Update()
@@ -58,13 +70,13 @@ public class Vehicle : MonoBehaviour
         }
     }
 
-    void AddWheelTorque(Rigidbody wheel, float accelerationAmount, int dir)
+    private void FixedUpdate()
     {
-        wheel.AddRelativeTorque(Vector3.right * accelerationAmount * dir);
+        transform.RotateAroundLocal(Vector3.up, steeringAngle * rb.velocity.z * Time.deltaTime);
     }
 
-    void SteerWheel(Rigidbody axle, float direction)
+    void RotateWheel(Transform wheel)
     {
-        axle.transform.Rotate(Vector3.up, direction, Space.World);
+        driveWheels[0].rotation = Quaternion.AngleAxis(steeringAngle, Vector3.up);
     }
 }
