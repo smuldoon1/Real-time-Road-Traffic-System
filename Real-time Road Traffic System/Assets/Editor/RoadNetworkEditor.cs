@@ -273,7 +273,7 @@ public class RoadNetworkEditor : Editor
         float previousEPA = road.equidistantPointAccuracy;
         if (showEquidistantPointsFoldout)
         {
-            road.equidistantPointDistance = EditorGUILayout.Slider("Distance between points", road.equidistantPointDistance, 0.05f, 1f);
+            road.equidistantPointDistance = EditorGUILayout.Slider("Distance between points", road.equidistantPointDistance, 0.05f, 4f);
             road.equidistantPointAccuracy = EditorGUILayout.Slider("Point calculation accuracy", road.equidistantPointAccuracy, 0f, 1f);
 
             // Equidistant point information
