@@ -5,7 +5,10 @@ using UnityEngine;
 [System.Serializable]
 public struct RoadPoint
 {
+    [SerializeField]
     Vector3 position;
+
+    [SerializeField]
     Vector3 forward;
 
     public RoadPoint(Vector3 position, Vector3 forward)
@@ -32,5 +35,10 @@ public struct RoadPoint
     public Vector3 Up
     {
         get { return Vector3.Cross(Right, Forward).normalized; }
+    }
+
+    public Quaternion ForwardRotation
+    {   
+        get { return Quaternion.Euler(Forward * Mathf.Deg2Rad); }
     }
 }

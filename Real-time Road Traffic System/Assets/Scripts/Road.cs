@@ -6,6 +6,12 @@ using UnityEngine;
 public class Road
 {
     [SerializeField, HideInInspector]
+    public RoadPoint[] lane0;
+
+    [SerializeField, HideInInspector]
+    public RoadPoint[] lane1;
+
+    [SerializeField, HideInInspector]
     List<Vector3> nodes; // Nodes follow the pattern :- anchor, control, control, anchor, control control, anchor, control etc.
 
     [SerializeField, HideInInspector]
@@ -21,14 +27,10 @@ public class Road
     [SerializeField, HideInInspector]
     public RoadPoint[] equidistantPoints;
 
-    public float equidistantPointDistance;
+    public float equidistantPointDistance; // The desired distance between each point along the road, less distance makes a smoother road
     public float equidistantPointAccuracy; // The accuracy of the equidistant points on each road section, the higher the more accurate
 
     public const int MAX_EQUIDISTANT_POINTS = 4096;
-
-    const float NODE_CLICK_DETECTION_RADIUS = 0.15f; // The sphere radius that checks if a node has been clicked on for the purposes of selection or deletion
-
-    Mesh mesh; // The mesh of the road
 
     // Places the four initial control nodes at arbitrary positions
     public Road(Vector3 centre)

@@ -311,7 +311,7 @@ public class RoadNetworkEditor : Editor
             Debug.LogError("Error creating road: Too many points (>" + Road.MAX_EQUIDISTANT_POINTS + "). Reduce the complexity of the road or increase the distance between the points.");
             return;
         }
-        network.SetMesh(RoadMesh.CreateMesh
+        network.GenerateRoad(RoadMesh.CreateMesh
         (
             road.equidistantPoints,
             road.RoadWidth,
