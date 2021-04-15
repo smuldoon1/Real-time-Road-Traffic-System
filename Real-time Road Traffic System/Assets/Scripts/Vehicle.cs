@@ -16,8 +16,6 @@ public class Vehicle : MonoBehaviour
 
     private void Start()
     {
-        currentPoint = 0;
-        time = 0;
         points = roadNetwork.road.lane0;
         StartCoroutine(Drive());
     }

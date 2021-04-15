@@ -1,2 +1,5 @@
 Bezier curves in unity - https://catlikecoding.com/unity/tutorials/curves-and-splines/
 EasyRoads3D - https://assetstore.unity.com/packages/tools/terrain/easyroads3d-pro-v3-469#reviews
+
+Assets
+Road texture - https://i.pinimg.com/originals/2d/ce/39/2dce3916bbac5dd21a6d69db2d32657a.jpg
