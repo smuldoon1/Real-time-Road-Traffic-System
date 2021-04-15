@@ -16,6 +16,8 @@ public class RoadNetwork : MonoBehaviour
     public void SetMesh(Mesh mesh, Vector2 textureScale)
     {
         GetComponent<MeshFilter>().mesh = mesh;
-        GetComponent<MeshRenderer>().sharedMaterial.mainTextureScale = textureScale;
+        MeshRenderer renderer = GetComponent<MeshRenderer>();
+        if (renderer.sharedMaterial != null)
+            renderer.sharedMaterial.mainTextureScale = textureScale;
     }
 }

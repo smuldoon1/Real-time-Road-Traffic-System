@@ -21,8 +21,8 @@ public class Road
     [SerializeField, HideInInspector]
     public RoadPoint[] equidistantPoints;
 
-    public float equidistantPointDistance = 0.1f;
-    public float equidistantPointAccuracy = 1; // The accuracy of the equidistant points on each road section, the higher the more accurate
+    public float equidistantPointDistance;
+    public float equidistantPointAccuracy; // The accuracy of the equidistant points on each road section, the higher the more accurate
 
     public const int MAX_EQUIDISTANT_POINTS = 4096;
 
@@ -40,7 +40,10 @@ public class Road
             centre + Vector3.right * .5f,
             centre + Vector3.right
         };
-        roadWidth = 1;
+        roadWidth = 3.5f;
+        textureTiling = 0.5f;
+        equidistantPointDistance = 0.5f;
+        equidistantPointAccuracy = 0.8f;
     }
 
     // Return a node given its index
@@ -91,13 +94,13 @@ public class Road
     public float RoadWidth
     {
         get { return roadWidth; }
-        set { roadWidth = Mathf.Max(0f, value); }
+        set { roadWidth = Mathf.Max(0.1f, value); }
     }
 
     public float TextureTiling
     {
         get { return textureTiling; }
-        set { textureTiling = value; }
+        set { textureTiling = Mathf.Max(0.05f, value); }
     }
 
     // Creates a new section of road
@@ -144,9 +147,9 @@ public class Road
     }
 
     // Attempt to remove a road section by checking if the mouse clicks an anchor node
-    public void RemoveRoadSection(Ray mouseRay)
+    public void RemoveRoadSection(Ray mouseRay, float anchorNodeSize, float controlNodeSize)
     {
-        int anchorIndex = SelectNode(mouseRay);
+        int anchorIndex = SelectNode(mouseRay, anchorNodeSize, controlNodeSize);
         if (anchorIndex != -1 && anchorIndex % 3 == 0)
             RemoveRoadSection(anchorIndex);
     }
@@ -205,13 +208,13 @@ public class Road
     }
 
     // Returns the index of an anchor node from a mouse click
-    public int SelectNode(Ray mouseRay)
+    public int SelectNode(Ray mouseRay, float anchorNodeSize, float controlNodeSize)
     {
         int nodeIndex = -1;
         for (int i = 0; i < nodes.Count && nodeIndex == -1; i++)
         {
             // If ray passes through a sphere centered on an anchor node, set anchorIndex to i
-            if (IntersectionFunctions.CheckLineIntersectsSphere(mouseRay, nodes[i], NODE_CLICK_DETECTION_RADIUS))
+            if (IntersectionFunctions.CheckLineIntersectsSphere(mouseRay, nodes[i], i % 3 == 0 ? anchorNodeSize : controlNodeSize))
                 nodeIndex = i;
         }
         return nodeIndex;

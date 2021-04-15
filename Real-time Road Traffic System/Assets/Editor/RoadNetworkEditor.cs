@@ -12,13 +12,30 @@ public class RoadNetworkEditor : Editor
     int selectedNode = -1;
     bool nodeEditingFoldout = true;
     bool showEquidistantPointsFoldout = false;
+    bool globalSettingsFoldout = false;
 
-    static Color anchorNodeColour = new Color(0.98f, 0.17f, 0.01f, 0.75f);
-    static Color controlNodeColour = new Color(0.19f, 0.55f, 1f, 0.4f);
-    static Color selectedNodeColour = new Color(1f, 1f, 0.38f, 0.8f);
-    static Color equidistantPointColour = new Color(1f, 1f, 1f, 0.25f);
+    static bool areGlobalsSet = false;
+
+    static Color anchorNodeColour;
+    static Color controlNodeColour;
+    static Color selectedNodeColour;
+    static Color equidistantPointColour;
+    static Color roadPathColour;
+    static Color controlConnectionColour;
+    static Color vehiclePathColour;
+
+    static float anchorNodeSize;
+    static float controlNodeSize;
+    static float equidistantPointSize;
 
     Tool previousTool = Tool.None;
+
+    RoadNetworkEditor()
+    {
+        // If this is the first time selecting a road, the global settings will not have been set yet so call ResetGlobals
+        if (!areGlobalsSet)
+            ResetGlobals();
+    }
 
     private void OnEnable()
     {
@@ -35,12 +52,30 @@ public class RoadNetworkEditor : Editor
         Undo.undoRedoPerformed += GenerateMesh;
     }
 
+    // Reset the global settings back to their default values
+    void ResetGlobals()
+    {
+        areGlobalsSet = true;
+
+        anchorNodeColour = new Color(0.98f, 0.17f, 0.01f, 0.75f);
+        controlNodeColour = new Color(0.19f, 0.55f, 1f, 0.4f);
+        selectedNodeColour = new Color(1f, 1f, 0.38f, 0.8f);
+        equidistantPointColour = new Color(1f, 1f, 1f, 0.25f);
+        roadPathColour = Color.yellow;
+        controlConnectionColour = Color.grey;
+        vehiclePathColour = Color.green;
+
+        anchorNodeSize = 1f;
+        controlNodeSize = 0.5f;
+        equidistantPointSize = 0.35f;
+    }
+
     private void OnSceneGUI()
     {
         try
         {
-            SceneInput(); // Get input from the developer
             DrawNetwork(); // Draw the road and the path
+            SceneInput(); // Get input from the developer
             Repaint(); // Used to update the inspectors selected node
         }
         catch (System.ArgumentOutOfRangeException)
@@ -58,7 +93,7 @@ public class RoadNetworkEditor : Editor
             Handles.color = equidistantPointColour;
             for (int i = 0; i < road.equidistantPoints.Length; i++)
             {
-                Handles.SphereHandleCap(0, road.equidistantPoints[i].Position, Quaternion.identity, 0.05f, EventType.Repaint);
+                Handles.SphereHandleCap(0, road.equidistantPoints[i].Position, Quaternion.identity, equidistantPointSize, EventType.Repaint);
             }
         }
 
@@ -66,10 +101,10 @@ public class RoadNetworkEditor : Editor
         for (int i = 0; i < road.SectionCount; i++)
         {
             Vector3[] nodes = road.GetRoadSection(i);
-            Handles.color = Color.grey;
+            Handles.color = controlConnectionColour;
             Handles.DrawLine(nodes[1], nodes[0]);
             Handles.DrawLine(nodes[2], nodes[3]);
-            Handles.DrawBezier(nodes[0], nodes[3], nodes[1], nodes[2], Color.yellow, null, 2f);
+            Handles.DrawBezier(nodes[0], nodes[3], nodes[1], nodes[2], roadPathColour, null, 2f);
         }
 
         // Draw all nodes
@@ -79,13 +114,13 @@ public class RoadNetworkEditor : Editor
                 Handles.color = selectedNodeColour;
             else
                 Handles.color = i % 3 == 0 ? anchorNodeColour : controlNodeColour;
-            Handles.SphereHandleCap(0, road[i], Quaternion.identity, i % 3 == 0 ? 0.15f : 0.1f, EventType.Repaint);
+            Handles.SphereHandleCap(0, road[i], Quaternion.identity, i % 3 == 0 ? anchorNodeSize : controlNodeSize, EventType.Repaint);
         }
 
         // Draw selected node as a movement handler
         if (selectedNode != -1)
         {
-            Vector3 newPosition = Handles.PositionHandle(road[selectedNode], Quaternion.identity);
+            Vector3 newPosition = Handles.DoPositionHandle(road[selectedNode], Quaternion.identity);
             if (road[selectedNode] != newPosition)
             {
                 Undo.RecordObject(network, "Move Node");
@@ -97,7 +132,7 @@ public class RoadNetworkEditor : Editor
         // Draw vehicle paths
         if (road.equidistantPoints != null)
         {
-            Handles.color = Color.green;
+            Handles.color = vehiclePathColour;
             for (int i = 0; i < road.equidistantPoints.Length && (i < road.equidistantPoints.Length - 1 || road.IsRingRoad); i++)
             {
                 RoadPoint point0 = road.equidistantPoints[i];
@@ -126,7 +161,7 @@ public class RoadNetworkEditor : Editor
         if (currentEvent.type == EventType.MouseDown && currentEvent.button == 1)
         {
             Undo.RecordObject(network, "Remove Road Section");
-            road.RemoveRoadSection(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition));
+            road.RemoveRoadSection(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), anchorNodeSize * .5f, controlNodeSize * .5f);
             GenerateMesh();
         }
 
@@ -134,7 +169,7 @@ public class RoadNetworkEditor : Editor
         if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0)
         {
             // Attempt to select a node and assign it to newSelectedNode
-            int newSelectedNode = road.SelectNode(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition));
+            int newSelectedNode = road.SelectNode(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), anchorNodeSize * .5f, controlNodeSize * .5f);
 
             // If there was a node selected and now there isn't, deselect the node
             if (selectedNode != -1 && newSelectedNode == -1)
@@ -246,6 +281,26 @@ public class RoadNetworkEditor : Editor
         }
         if (GUILayout.Button("Generate Road Mesh") || previousEPD != road.equidistantPointDistance || previousEPA != road.equidistantPointAccuracy)
             GenerateMesh();
+
+        globalSettingsFoldout = EditorGUILayout.Foldout(globalSettingsFoldout, "Global Settings");
+
+        if (globalSettingsFoldout)
+        {
+            anchorNodeSize = Mathf.Max(0, EditorGUILayout.FloatField("Anchor node size", anchorNodeSize));
+            controlNodeSize = Mathf.Max(0, EditorGUILayout.FloatField("Control node size", controlNodeSize));
+            equidistantPointSize = Mathf.Max(0, EditorGUILayout.FloatField("Equidistant point size", equidistantPointSize));
+
+            anchorNodeColour = EditorGUILayout.ColorField("Anchor node colour", anchorNodeColour);
+            controlNodeColour = EditorGUILayout.ColorField("Control node colour", controlNodeColour);
+            selectedNodeColour = EditorGUILayout.ColorField("Selected node colour", selectedNodeColour);
+            equidistantPointColour = EditorGUILayout.ColorField("Equidistant point colour", equidistantPointColour);
+            controlConnectionColour = EditorGUILayout.ColorField("Anchor-to-control line colour", controlConnectionColour);
+            roadPathColour = EditorGUILayout.ColorField("Road path colour", roadPathColour);
+            vehiclePathColour = EditorGUILayout.ColorField("Vehicle path colour", vehiclePathColour);
+
+            if (GUILayout.Button("Reset Global Settings"))
+                ResetGlobals();
+        }
     }
 
     // Generate the mesh of the road
