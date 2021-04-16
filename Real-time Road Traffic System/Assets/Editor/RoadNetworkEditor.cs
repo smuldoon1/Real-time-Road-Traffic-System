@@ -153,7 +153,7 @@ public class RoadNetworkEditor : Editor
         if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 && currentEvent.shift)
         {
             Undo.RecordObject(network, "Create Road Section");
-            road.CreateRoadSection(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition));
+            road.CreateRoadSection(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), selectedNode, road.RoadWidth * .5f);
             GenerateMesh();
         }
 
@@ -220,7 +220,7 @@ public class RoadNetworkEditor : Editor
 
         // Texture tiling value, sets the road texture to tile with a consistent length regardless of the road size
         float previousTiling = road.TextureTiling;
-        road.TextureTiling = EditorGUILayout.Slider("Texture tiling", road.TextureTiling, 0.01f, 0.2f);
+        road.TextureTiling = EditorGUILayout.Slider("Texture tiling", road.TextureTiling, 0.01f, 1f);
         if (previousTiling != road.TextureTiling)
             GenerateMesh();
 
@@ -259,8 +259,19 @@ public class RoadNetworkEditor : Editor
                     GenerateMesh();
                 }
 
+                // Insert button creates a new node between the selected node and the next one
+                if (selectedNode % 3 != 0)
+                    GUI.enabled = false;
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Insert node"))
+                {
+                    Undo.RecordObject(network, "Insert road section");
+                    road.SeperateRoadSection(selectedNode);
+                    selectedNode += 3;
+                    GenerateMesh();
+                }
                 // Delete node button, only enabled if the selected node is an anchor node and there is more than 2 anchor nodes
-                if (selectedNode % 3 != 0 || road.NodeCount < 7)
+                if (road.NodeCount < 7)
                     GUI.enabled = false;
                 if (GUILayout.Button("Delete Node"))
                 {
@@ -269,6 +280,7 @@ public class RoadNetworkEditor : Editor
                     GenerateMesh();
                 }
                 GUI.enabled = true;
+                GUILayout.EndHorizontal();
 
                 // Additional node information
                 EditorGUILayout.LabelField("Node Index: ", selectedNode.ToString());
@@ -288,8 +300,16 @@ public class RoadNetworkEditor : Editor
             // Equidistant point information
             EditorGUILayout.LabelField("Number of points: ", road.equidistantPoints.Length.ToString());
         }
+
+        // Manually generate mesh
         if (GUILayout.Button("Generate Road Mesh") || previousEPD != road.equidistantPointDistance || previousEPA != road.equidistantPointAccuracy)
             GenerateMesh();
+
+        // Mesh data
+        GUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("Tris: " + 6 * road.equidistantPoints.Length);
+        EditorGUILayout.LabelField("Verts: " + 2 * road.equidistantPoints.Length);
+        GUILayout.EndHorizontal();
 
         globalSettingsFoldout = EditorGUILayout.Foldout(globalSettingsFoldout, "Global Settings");
 
@@ -321,18 +341,14 @@ public class RoadNetworkEditor : Editor
     // Generate the mesh of the road
     public void GenerateMesh()
     {
-        if (!GenerateEquidistantPoints())
-        {
-            Debug.LogError("Error creating road: Too many points (>" + Road.MAX_EQUIDISTANT_POINTS + "). Reduce the complexity of the road or increase the distance between the points.");
-            return;
-        }
+        GenerateEquidistantPoints();
         network.GenerateRoad(RoadMesh.CreateMesh
         (
             road.equidistantPoints,
             road.RoadWidth,
-            road.IsRingRoad),
-            new Vector2(1, Mathf.RoundToInt(road.TextureTiling * road.equidistantPoints.Length * road.equidistantPointDistance))
-        );
+            road.IsRingRoad
+        ),
+        new Vector2(1, Mathf.RoundToInt(road.TextureTiling * road.equidistantPoints.Length * road.equidistantPointDistance)));
     }
 
     // Generates equidistant points along the road, returns false if there are too many points
@@ -368,7 +384,7 @@ public class RoadNetworkEditor : Editor
                     previousPoint = adjustedPoint;
 
                     // If there are too many points in the road cancel the operation and return
-                    if (positions.Count > Road.MAX_EQUIDISTANT_POINTS)
+                    if (positions.Count > 65536)
                         return false;
                 }
                 previousPoint = point;

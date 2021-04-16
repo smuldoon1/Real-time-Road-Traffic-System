@@ -53,7 +53,6 @@ public class RoadNetwork : MonoBehaviour
         road.lane0 = lane0List.ToArray();
         road.lane1 = lane1List.ToArray();
 
-        if (OnRoadChanged != null)
-            OnRoadChanged();
+        OnRoadChanged?.Invoke();
     }
 }

@@ -30,7 +30,6 @@ public class Road
     [SerializeField, HideInInspector]
     public RoadPoint[] equidistantPoints;
 
-
     // The desired distance between each point along the road
     // A smaller distance makes the road edges and car movement smoother but can have a severe impact on the performance
     public float equidistantPointDistance;
@@ -38,17 +37,15 @@ public class Road
     // The accuracy of the equidistant point calculation, does not affect computation 
     public float equidistantPointAccuracy;
 
-    public const int MAX_EQUIDISTANT_POINTS = 4096;
-
     // Places the four initial control nodes at arbitrary positions
     public Road(Vector3 centre)
     {
         nodes = new List<Vector3>
         {
-            centre + Vector3.left,
-            centre + Vector3.left * .5f,
-            centre + Vector3.right * .5f,
-            centre + Vector3.right
+            centre + Vector3.left * 5f,
+            centre + Vector3.left * 2f,
+            centre + Vector3.right * 2f,
+            centre + Vector3.right * 5f
         };
         roadWidth = 3.5f;
         textureTiling = 0.07f;
@@ -110,7 +107,7 @@ public class Road
     public float TextureTiling
     {
         get { return textureTiling; }
-        set { textureTiling = Mathf.Clamp(value, 0.01f, 0.2f); }
+        set { textureTiling = Mathf.Clamp(value, 0.01f, 1f); }
     }
 
     public Material Material
@@ -132,11 +129,23 @@ public class Road
         nodes.Add(anchorPosition);
     }
 
-    // Tries to create a new section of road using a ray based on the mouse position,
-    // the y value is equal to the previous anchor nodes height
-    public void CreateRoadSection(Ray mouseRay)
+    // Tries to create a new section of road using a ray based on the mouse position
+    public void CreateRoadSection(Ray mouseRay, int selectedNode, float insertDetectingRadius)
     {
-        Plane plane = new Plane(Vector3.down, nodes[nodes.Count - 1].y);
+        // Firstly, try and create a new section of road by inserting an anchor node in an existing section
+        /*
+        for (int i = 0; i < equidistantPoints.Length; i++)
+        {
+            if (IntersectionFunctions.CheckLineIntersectsSphere(mouseRay, equidistantPoints[i].Position, insertDetectingRadius))
+            {
+                SeperateRoadSection(equidistantPoints[i].Position, GetNodeBeforePoint(i));
+                return;
+            }
+        }*/
+
+        // Else, create a new road section at the end of the road
+        // Y-position of new node is based on current selected node, if no node is selected, the last node is used
+        Plane plane = new Plane(Vector3.down, selectedNode != -1 ? nodes[selectedNode].y : nodes[nodes.Count - 1].y);
         if (!plane.Raycast(mouseRay, out float distanceFromOrigin))
             return;
         CreateRoadSection(mouseRay.GetPoint(distanceFromOrigin));
@@ -170,12 +179,18 @@ public class Road
             RemoveRoadSection(anchorIndex);
     }
 
-    // Seperate a road section by adding a new anchor node between them
-    public void SeperateRoadSection(Vector3 anchorPosition, int sectionIndex)
+    // Seperate a road section by adding a new anchor node between two existing anchor nodes
+    public void SeperateRoadSection(int nodeIndex)
     {
-        nodes.InsertRange(sectionIndex * 3 + 2, new Vector3[]
+        Vector3 insertVector;
+        if (nodeIndex + 3 < NodeCount)
+            insertVector = nodes[nodeIndex] + nodes[nodeIndex + 3];
+        else
+            insertVector = nodes[nodeIndex] + nodes[0];
+            
+        nodes.InsertRange(GetNodeIndex(nodeIndex + 2), new Vector3[]
         {
-            Vector3.zero, anchorPosition, Vector3.zero
+            insertVector * .25f, insertVector * .5f, insertVector * .75f
         });
     }
 
@@ -240,5 +255,12 @@ public class Road
     int GetNodeIndex(int i)
     {
         return (i + nodes.Count) % nodes.Count;
+    }
+
+    // Return the nearest anchor node before the given equidistant point
+    // NOT CURRENTLY IMPLEMENTED
+    int GetNodeBeforePoint(int i)
+    {
+        return -1;
     }
 }

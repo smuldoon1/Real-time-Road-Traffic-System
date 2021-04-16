@@ -7,6 +7,8 @@ public static class RoadMesh
     // Create a mesh based on a path of equidistant points
     public static Mesh CreateMesh(RoadPoint[] points, float roadWidth, bool isClosed)
     {
+        Mesh mesh = new Mesh();
+
         Vector3[] vertices = new Vector3[points.Length * 2];
         int trianglesSize = 2 * (points.Length - 1) + ((isClosed) ? 2 : 0);
         int[] triangles = new int[trianglesSize * 3];
@@ -17,7 +19,7 @@ public static class RoadMesh
             vertices[vertIndex] = points[i].Position + points[i].Right * roadWidth * 0.5f;
             vertices[vertIndex + 1] = points[i].Position - points[i].Right * roadWidth * 0.5f;
 
-            float completion = i / (float)(points.Length);
+            float completion = i / (float)(points.Length - 1);
             float v = 1 - Mathf.Abs(2 * completion - 1);
             uvs[vertIndex] = new Vector2(0, v);
             uvs[vertIndex + 1] = new Vector2(1, v);
@@ -33,8 +35,6 @@ public static class RoadMesh
                 triangles[triIndex + 5] = (vertIndex + 3) % vertices.Length;
             }
         }
-
-        Mesh mesh = new Mesh();
         mesh.vertices = vertices;
         mesh.triangles = triangles;
         mesh.uv = uvs;
