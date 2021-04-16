@@ -8,12 +8,30 @@ public class RoadNetwork : MonoBehaviour
     [HideInInspector]
     public Road road;
 
+    public delegate void RoadUpdateEvent();
+    public event RoadUpdateEvent OnRoadChanged;
+
     public void CreateRoad()
     {
         road = new Road(transform.position);
     }
 
     private void Awake()
+    {
+        SetLanePoints();
+    }
+
+    public void GenerateRoad(Mesh mesh, Vector2 textureScale)
+    {
+        GetComponent<MeshFilter>().mesh = mesh;
+        MeshRenderer renderer = GetComponent<MeshRenderer>();
+        if (renderer.sharedMaterial != null)
+            renderer.sharedMaterial.mainTextureScale = textureScale;
+
+        SetLanePoints();
+    }
+
+    public void SetLanePoints()
     {
         List<RoadPoint> lane0List = new List<RoadPoint>();
         List<RoadPoint> lane1List = new List<RoadPoint>();
@@ -25,13 +43,8 @@ public class RoadNetwork : MonoBehaviour
         }
         road.lane0 = lane0List.ToArray();
         road.lane1 = lane1List.ToArray();
-    }
 
-    public void GenerateRoad(Mesh mesh, Vector2 textureScale)
-    {
-        GetComponent<MeshFilter>().mesh = mesh;
-        MeshRenderer renderer = GetComponent<MeshRenderer>();
-        if (renderer.sharedMaterial != null)
-            renderer.sharedMaterial.mainTextureScale = textureScale;
+        if (OnRoadChanged != null)
+            OnRoadChanged();
     }
 }

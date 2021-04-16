@@ -62,4 +62,14 @@ public class Vehicle : MonoBehaviour
         int index1 = (i + direction + points.Length) % points.Length;
         return Vector3.Lerp(points[index0].Forward, points[index1].Forward, time);
     }
+
+    private void OnEnable()
+    {
+        roadNetwork.OnRoadChanged += UpdateRouteData;
+    }
+
+    private void OnDisable()
+    {
+        roadNetwork.OnRoadChanged -= UpdateRouteData;
+    }
 }
