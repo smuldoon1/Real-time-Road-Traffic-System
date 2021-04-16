@@ -31,6 +31,15 @@ public class RoadNetwork : MonoBehaviour
         SetLanePoints();
     }
 
+    public void UpdateMaterial(Material material)
+    {
+        MeshRenderer renderer = GetComponent<MeshRenderer>();
+        if (material != null)
+            renderer.sharedMaterial = new Material(material);
+        else
+            renderer.sharedMaterial = null;
+    }
+
     public void SetLanePoints()
     {
         List<RoadPoint> lane0List = new List<RoadPoint>();

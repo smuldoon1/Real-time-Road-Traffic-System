@@ -220,9 +220,18 @@ public class RoadNetworkEditor : Editor
 
         // Texture tiling value, sets the road texture to tile with a consistent length regardless of the road size
         float previousTiling = road.TextureTiling;
-        road.TextureTiling = EditorGUILayout.FloatField("Texture tiling", road.TextureTiling);
+        road.TextureTiling = EditorGUILayout.Slider("Texture tiling", road.TextureTiling, 0.01f, 0.2f);
         if (previousTiling != road.TextureTiling)
             GenerateMesh();
+
+        // Texture tiling value, sets the road texture to tile with a consistent length regardless of the road size
+        Material previousMaterial = road.Material;
+        road.Material = (Material)EditorGUILayout.ObjectField("Material", road.Material, typeof(Material), false);
+        if (previousMaterial != road.Material)
+        {
+            network.UpdateMaterial(road.Material);
+            GenerateMesh();
+        }
 
         nodeEditingFoldout = EditorGUILayout.Foldout(nodeEditingFoldout, "Edit Node");
 
@@ -300,6 +309,12 @@ public class RoadNetworkEditor : Editor
 
             if (GUILayout.Button("Reset Global Settings"))
                 ResetGlobals();
+        }
+
+        if (GUI.changed)
+        {
+            EditorUtility.SetDirty(network);
+            Undo.RecordObject(network, "Road network changes");
         }
     }
 

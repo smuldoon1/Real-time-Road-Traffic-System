@@ -23,6 +23,9 @@ public class Road
     [SerializeField, HideInInspector]
     float textureTiling; // Tiling amount for the road texture
 
+    [SerializeField, HideInInspector]
+    Material material; // Road material
+
     // Stores equidistant points along the length of the road used to generate the mesh and calculate route distance
     [SerializeField, HideInInspector]
     public RoadPoint[] equidistantPoints;
@@ -102,7 +105,13 @@ public class Road
     public float TextureTiling
     {
         get { return textureTiling; }
-        set { textureTiling = Mathf.Max(0.05f, value); }
+        set { textureTiling = Mathf.Clamp(value, 0.01f, 0.2f); }
+    }
+
+    public Material Material
+    {
+        get { return material; }
+        set { material = value; }
     }
 
     // Creates a new section of road
