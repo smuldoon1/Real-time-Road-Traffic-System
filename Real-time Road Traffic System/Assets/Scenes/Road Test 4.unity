@@ -120,7 +120,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!43 &497435139
+--- !u!43 &109418352
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -606,7 +606,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 583777730}
-  m_Mesh: {fileID: 497435139}
+  m_Mesh: {fileID: 109418352}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -777,7 +777,7 @@ MonoBehaviour:
   speed: 20
   currentPoint: 0
   time: 0
-  lane: 0
+  lane: 1
 --- !u!21 &2084632992
 Material:
   serializedVersion: 6

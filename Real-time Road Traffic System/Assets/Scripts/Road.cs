@@ -30,8 +30,13 @@ public class Road
     [SerializeField, HideInInspector]
     public RoadPoint[] equidistantPoints;
 
-    public float equidistantPointDistance; // The desired distance between each point along the road, less distance makes a smoother road
-    public float equidistantPointAccuracy; // The accuracy of the equidistant points on each road section, the higher the more accurate
+
+    // The desired distance between each point along the road
+    // A smaller distance makes the road edges and car movement smoother but can have a severe impact on the performance
+    public float equidistantPointDistance;
+
+    // The accuracy of the equidistant point calculation, does not affect computation 
+    public float equidistantPointAccuracy;
 
     public const int MAX_EQUIDISTANT_POINTS = 4096;
 
@@ -46,9 +51,9 @@ public class Road
             centre + Vector3.right
         };
         roadWidth = 3.5f;
-        textureTiling = 0.5f;
-        equidistantPointDistance = 0.5f;
-        equidistantPointAccuracy = 0.8f;
+        textureTiling = 0.07f;
+        equidistantPointDistance = 1f;
+        equidistantPointAccuracy = 1f;
     }
 
     // Return a node given its index

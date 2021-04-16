@@ -8,11 +8,13 @@ public class Vehicle : MonoBehaviour
     public float speed;
 
     public int currentPoint;
+    public float time;
+    public Lane lane;
 
     RoadPoint[] points;
-    public float time;
+    float pointDistance;
 
-    public Lane lane;
+    float lapTime = 0;
 
     private void Start()
     {
@@ -23,6 +25,7 @@ public class Vehicle : MonoBehaviour
     public void UpdateRouteData()
     {
         points = roadNetwork.road.lane0;
+        pointDistance = roadNetwork.road.equidistantPointDistance;
     }
 
     private IEnumerator Drive()
@@ -35,16 +38,25 @@ public class Vehicle : MonoBehaviour
                 points = roadNetwork.road.lane1;
             transform.position = LerpedPosition(currentPoint, lane == 0 ? 1 : -1);
             transform.forward = LerpedForward(currentPoint, lane == 0 ? 1 : -1);
-            time += Time.deltaTime * Mathf.Abs(speed);
+            time += Time.deltaTime * Mathf.Abs(speed) / pointDistance;
             if (time >= 1)
             {
                 currentPoint += Mathf.FloorToInt(time) * (lane == Lane.LEFT ? 1 : -1);
                 time %= 1;
             }
             if (currentPoint >= points.Length)
+            {
+                Debug.Log(name + " lap time: " + lapTime);
+                lapTime = 0f;
                 currentPoint -= points.Length;
-            if (currentPoint < 0)
+            }
+            else if (currentPoint < 0)
+            {
+                Debug.Log(name + " lap time: " + lapTime);
+                lapTime = 0f;
                 currentPoint += points.Length;
+            }
+            lapTime += Time.deltaTime;
             yield return new WaitForEndOfFrame();
         }
     }

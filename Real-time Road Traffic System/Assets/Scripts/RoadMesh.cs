@@ -17,7 +17,7 @@ public static class RoadMesh
             vertices[vertIndex] = points[i].Position + points[i].Right * roadWidth * 0.5f;
             vertices[vertIndex + 1] = points[i].Position - points[i].Right * roadWidth * 0.5f;
 
-            float completion = i / (float)(points.Length - 1f);
+            float completion = i / (float)(points.Length);
             float v = 1 - Mathf.Abs(2 * completion - 1);
             uvs[vertIndex] = new Vector2(0, v);
             uvs[vertIndex + 1] = new Vector2(1, v);
