@@ -18,6 +18,9 @@ public class Road
     bool isRingRoad; // Closes the path so that the road continues in a loop
 
     [SerializeField, HideInInspector]
+    float speedLimit;
+
+    [SerializeField, HideInInspector]
     float roadWidth; // Total road width
 
     [SerializeField, HideInInspector]
@@ -96,6 +99,12 @@ public class Road
                 }
             }
         }
+    }
+
+    public float SpeedLimit
+    {
+        get { return speedLimit; }
+        set { speedLimit = Mathf.Max(0f, value); }
     }
 
     public float RoadWidth

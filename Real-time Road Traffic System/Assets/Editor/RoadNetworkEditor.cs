@@ -212,6 +212,9 @@ public class RoadNetworkEditor : Editor
             GenerateMesh();
         }
 
+        // Road speed limit
+        road.SpeedLimit = EditorGUILayout.FloatField("Maximum speed limit", road.SpeedLimit);
+
         // Overall road width
         float previousWidth = road.RoadWidth;
         road.RoadWidth = EditorGUILayout.FloatField("Road width", road.RoadWidth);
@@ -335,6 +338,7 @@ public class RoadNetworkEditor : Editor
         {
             EditorUtility.SetDirty(network);
             Undo.RecordObject(network, "Road network changes");
+            GenerateMesh();
         }
     }
 

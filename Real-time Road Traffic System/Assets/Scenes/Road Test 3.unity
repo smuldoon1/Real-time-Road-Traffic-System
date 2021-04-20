@@ -28682,6 +28682,7 @@ MonoBehaviour:
     - {x: -38.9056, y: -2.3311923, z: 4.3884697}
     - {x: -27.171673, y: 0, z: -8.093178}
     isRingRoad: 1
+    speedLimit: 200
     roadWidth: 2.5
     textureTiling: 0.149
     material: {fileID: 2100000, guid: 14d8ef25a6993804c91cb3ccb5ebecf8, type: 2}
@@ -43359,7 +43360,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   roadNetwork: {fileID: 583777732}
-  speed: 20
+  topSpeed: 50
+  speedCheckDistance: 10
+  turningSmoothness: 3
+  maxTurningFactor: 0.6
+  velocity: 0
   currentPoint: 0
   time: 0
   lane: 0
