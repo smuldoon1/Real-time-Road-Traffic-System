@@ -2,57 +2,58 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class RoadNetwork : MonoBehaviour
 {
     [HideInInspector]
-    public Road road;
+    public List<Road> roads;
+
+    public Road selectedRoad;
 
     public delegate void RoadUpdateEvent();
     public event RoadUpdateEvent OnRoadChanged;
 
-    public void CreateRoad()
+    private void OnEnable()
     {
-        road = new Road(transform.position);
+        roads = new List<Road>();
     }
 
-    private void Awake()
+    public void CreateRoadNetwork()
     {
-        SetLanePoints();
-    }
-
-    public void GenerateRoad(Mesh mesh, Vector2 textureScale)
-    {
-        GetComponent<MeshFilter>().mesh = mesh;
-        MeshRenderer renderer = GetComponent<MeshRenderer>();
-        if (renderer.sharedMaterial != null)
-            renderer.sharedMaterial.mainTextureScale = textureScale;
-
-        SetLanePoints();
-    }
-
-    public void UpdateMaterial(Material material)
-    {
-        MeshRenderer renderer = GetComponent<MeshRenderer>();
-        if (material != null)
-            renderer.sharedMaterial = new Material(material);
-        else
-            renderer.sharedMaterial = null;
-    }
-
-    public void SetLanePoints()
-    {
-        List<RoadPoint> lane0List = new List<RoadPoint>();
-        List<RoadPoint> lane1List = new List<RoadPoint>();
-        for (int i = 0; i < road.equidistantPoints.Length; i++)
+        foreach (Road road in roads)
         {
-            RoadPoint currentPoint = road.equidistantPoints[i];
-            lane0List.Add(new RoadPoint(currentPoint.Position + currentPoint.Right * road.RoadWidth * 0.25f, currentPoint.Forward));
-            lane1List.Add(new RoadPoint(currentPoint.Position - currentPoint.Right * road.RoadWidth * 0.25f, -currentPoint.Forward));
+            try
+            {
+                DestroyImmediate(road.gameObject);
+            }
+            catch
+            {
+                roads = new List<Road>();
+            }
         }
-        road.lane0 = lane0List.ToArray();
-        road.lane1 = lane1List.ToArray();
+        roads = new List<Road>();
+        CreateNewRoad();
+    }
 
-        OnRoadChanged?.Invoke();
+    public Road CreateNewRoad()
+    {
+        Road newRoad = new GameObject("Road (" + roads.Count + ")").AddComponent<Road>();
+        newRoad.InitialiseRoad(transform.position);
+        newRoad.transform.parent = transform;
+        roads.Add(newRoad);
+        return newRoad;
+    }
+
+    public Road ActiveRoad
+    {
+        get
+        {
+            return selectedRoad;
+        }
+        set
+        {
+            foreach (Road road in roads)
+                if (road == value)
+                    selectedRoad = road;
+        }
     }
 }

@@ -5,6 +5,8 @@ using UnityEngine;
 public class Vehicle : MonoBehaviour
 {
     public RoadNetwork roadNetwork;
+    Road road;
+
     public float topSpeed = 6f; // The maximum speed of the vehicle. It will try to stay at this speed if there are no obstacles or speed limit preventing this
     public float speedCheckDistance = 1f; // How far in front of the vehicle will be checked to test for corners or obstructions, based on the vehicles current velocity
     [Min(0)]
@@ -20,16 +22,18 @@ public class Vehicle : MonoBehaviour
     RoadPoint[] path;
     float pointDistance;
 
-    private void Start()
+    private void Awake()
     {
+        road = roadNetwork.roads[0];
         UpdateRouteData();
         StartCoroutine(Drive());
     }
 
     public void UpdateRouteData()
     {
-        path = roadNetwork.road.lane0;
-        pointDistance = roadNetwork.road.equidistantPointDistance;
+        Debug.Log("Road name" + road.name);
+        path = road.lane0;
+        pointDistance = road.equidistantPointDistance;
     }
 
     private IEnumerator Drive()
@@ -37,9 +41,9 @@ public class Vehicle : MonoBehaviour
         while (true)
         {
             if (lane == 0)
-                path = roadNetwork.road.lane0;
+                path = road.lane0;
             else
-                path = roadNetwork.road.lane1;
+                path = road.lane1;
 
             transform.position = LerpedPosition(currentPoint, lane == 0 ? 1 : -1);
             transform.forward = LerpedForward(currentPoint, lane == 0 ? 1 : -1);
@@ -77,16 +81,16 @@ public class Vehicle : MonoBehaviour
     float CalculateSpeed()
     {
         float totalMagnitude = 0f;
-        int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, velocity * speedCheckDistance) / roadNetwork.road.equidistantPointDistance);
+        int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, velocity * speedCheckDistance) / road.equidistantPointDistance);
         for (int i = 1; i < numberOfPoints; i++)
             totalMagnitude += (path[(path.Length + currentPoint + (lane == Lane.LEFT ? i : -i)) % path.Length].Forward - path[currentPoint].Forward).magnitude;
         float magnitude = totalMagnitude /= numberOfPoints - 1;
         float turningFactor = Mathf.Clamp(-minimumTurningSpeed * Mathf.Pow(magnitude, turningSharpness) + 1f, 1 - minimumTurningSpeed, 1f);
-        return Mathf.Min(roadNetwork.road.SpeedLimit * turningFactor, topSpeed * turningFactor);
+        return Mathf.Min(road.SpeedLimit * turningFactor, topSpeed * turningFactor);
     }
 
     private void OnEnable()
-    {
+    {      
         roadNetwork.OnRoadChanged += UpdateRouteData;
     }
 
@@ -97,12 +101,12 @@ public class Vehicle : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (Application.isPlaying)
+        if (Application.isPlaying && road != null)
         {
             Gizmos.color = Color.blue;
             Gizmos.DrawLine(path[currentPoint].Position, path[currentPoint].Position + path[currentPoint].Forward * 3f);
             Gizmos.color = Color.red;
-            int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, velocity * speedCheckDistance) / roadNetwork.road.equidistantPointDistance);
+            int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, velocity * speedCheckDistance) / road.equidistantPointDistance);
             for (int i = 1; i < numberOfPoints; i++)
             {
                 float magnitude = (path[(path.Length + currentPoint + (lane == Lane.LEFT ? i : -i)) % path.Length].Forward - path[currentPoint].Forward).magnitude;

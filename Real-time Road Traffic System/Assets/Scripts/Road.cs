@@ -3,8 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class Road
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+public class Road : MonoBehaviour
 {
+    public delegate void RoadUpdateEvent();
+    public event RoadUpdateEvent OnRoadChanged;
+
     [SerializeField, HideInInspector]
     public RoadPoint[] lane0;
 
@@ -41,7 +45,7 @@ public class Road
     public float equidistantPointAccuracy;
 
     // Places the four initial control nodes at arbitrary positions
-    public Road(Vector3 centre)
+    public void InitialiseRoad(Vector3 centre)
     {
         nodes = new List<Vector3>
         {
@@ -126,6 +130,11 @@ public class Road
         set { material = value; }
     }
 
+    private void Awake()
+    {
+        SetLanePoints();
+    }
+
     // Creates a new section of road
     public void CreateRoadSection(Vector3 anchorPosition)
     {
@@ -142,18 +151,6 @@ public class Road
     // Tries to create a new section of road using a ray based on the mouse position
     public void CreateRoadSection(Ray mouseRay, int selectedNode, float insertDetectingRadius)
     {
-        // Firstly, try and create a new section of road by inserting an anchor node in an existing section
-        /*
-        for (int i = 0; i < equidistantPoints.Length; i++)
-        {
-            if (IntersectionFunctions.CheckLineIntersectsSphere(mouseRay, equidistantPoints[i].Position, insertDetectingRadius))
-            {
-                SeperateRoadSection(equidistantPoints[i].Position, GetNodeBeforePoint(i));
-                return;
-            }
-        }*/
-
-        // Else, create a new road section at the end of the road
         // Y-position of new node is based on current selected node, if no node is selected, the last node is used
         Plane plane = new Plane(Vector3.down, selectedNode != -1 ? nodes[selectedNode].y : nodes[nodes.Count - 1].y);
         if (!plane.Raycast(mouseRay, out float distanceFromOrigin))
@@ -172,13 +169,9 @@ public class Road
             nodes.RemoveRange(0, 3);
         }
         else if (anchorIndex == nodes.Count - 1 && !isRingRoad)
-        {
             nodes.RemoveRange(anchorIndex - 2, 3);
-        }
         else
-        {
             nodes.RemoveRange(anchorIndex - 1, 3);
-        }
     }
 
     // Attempt to remove a road section by checking if the mouse clicks an anchor node
@@ -267,10 +260,38 @@ public class Road
         return (i + nodes.Count) % nodes.Count;
     }
 
-    // Return the nearest anchor node before the given equidistant point
-    // NOT CURRENTLY IMPLEMENTED
-    int GetNodeBeforePoint(int i)
+    public void GenerateRoad(Mesh mesh, Vector2 textureScale)
     {
-        return -1;
+        GetComponent<MeshFilter>().mesh = mesh;
+        MeshRenderer renderer = GetComponent<MeshRenderer>();
+        if (renderer.sharedMaterial != null)
+            renderer.sharedMaterial.mainTextureScale = textureScale;
+
+        SetLanePoints();
+    }
+
+    public void UpdateMaterial(Material material)
+    {
+        MeshRenderer renderer = GetComponent<MeshRenderer>();
+        if (material != null)
+            renderer.sharedMaterial = new Material(material);
+        else
+            renderer.sharedMaterial = null;
+    }
+
+    public void SetLanePoints()
+    {
+        List<RoadPoint> lane0List = new List<RoadPoint>();
+        List<RoadPoint> lane1List = new List<RoadPoint>();
+        for (int i = 0; i < equidistantPoints.Length; i++)
+        {
+            RoadPoint currentPoint = equidistantPoints[i];
+            lane0List.Add(new RoadPoint(currentPoint.Position + currentPoint.Right * RoadWidth * 0.25f, currentPoint.Forward));
+            lane1List.Add(new RoadPoint(currentPoint.Position - currentPoint.Right * RoadWidth * 0.25f, -currentPoint.Forward));
+        }
+        lane0 = lane0List.ToArray();
+        lane1 = lane1List.ToArray();
+
+        OnRoadChanged?.Invoke();
     }
 }

@@ -7,7 +7,7 @@ using UnityEditor;
 public class RoadNetworkEditor : Editor
 {
     RoadNetwork network;
-    Road road;
+    Road selectedRoad;
 
     int selectedNode = -1;
     bool nodeEditingFoldout = true;
@@ -40,9 +40,9 @@ public class RoadNetworkEditor : Editor
     private void OnEnable()
     {
         network = (RoadNetwork)target;
-        if (network.road == null)
-            network.CreateRoad();
-        road = network.road;
+        if (network.roads == null || network.roads.Count == 0)
+            network.CreateRoadNetwork();
+        selectedRoad = network.roads[0];
 
         // Disables the default transform/rotation/other handle when first selecting the road network
         previousTool = Tools.current;
@@ -72,11 +72,15 @@ public class RoadNetworkEditor : Editor
 
     private void OnSceneGUI()
     {
+        selectedRoad = network.ActiveRoad;
         try
         {
-            DrawNetwork(); // Draw the road and the path
-            SceneInput(); // Get input from the developer
-            Repaint(); // Used to update the inspectors selected node
+            if (selectedRoad != null)
+            {
+                DrawNetwork(); // Draw the road and the path
+                SceneInput(); // Get input from the developer
+                Repaint(); // Used to update the inspectors selected node
+            }
         }
         catch (System.ArgumentOutOfRangeException)
         {
@@ -88,19 +92,19 @@ public class RoadNetworkEditor : Editor
     void DrawNetwork()
     {
         // Draw equidistant points
-        if (showEquidistantPointsFoldout && road.equidistantPoints != null)
+        if (showEquidistantPointsFoldout && selectedRoad.equidistantPoints != null)
         {
             Handles.color = equidistantPointColour;
-            for (int i = 0; i < road.equidistantPoints.Length; i++)
+            for (int i = 0; i < selectedRoad.equidistantPoints.Length; i++)
             {
-                Handles.SphereHandleCap(0, road.equidistantPoints[i].Position, Quaternion.identity, equidistantPointSize, EventType.Repaint);
+                Handles.SphereHandleCap(0, selectedRoad.equidistantPoints[i].Position, Quaternion.identity, equidistantPointSize, EventType.Repaint);
             }
         }
 
         // Draw road as a bezier curve
-        for (int i = 0; i < road.SectionCount; i++)
+        for (int i = 0; i < selectedRoad.SectionCount; i++)
         {
-            Vector3[] nodes = road.GetRoadSection(i);
+            Vector3[] nodes = selectedRoad.GetRoadSection(i);
             Handles.color = controlConnectionColour;
             Handles.DrawLine(nodes[1], nodes[0]);
             Handles.DrawLine(nodes[2], nodes[3]);
@@ -108,38 +112,38 @@ public class RoadNetworkEditor : Editor
         }
 
         // Draw all nodes
-        for (int i = 0; i < road.NodeCount; i++)
+        for (int i = 0; i < selectedRoad.NodeCount; i++)
         {
             if (i == selectedNode)
                 Handles.color = selectedNodeColour;
             else
                 Handles.color = i % 3 == 0 ? anchorNodeColour : controlNodeColour;
-            Handles.SphereHandleCap(0, road[i], Quaternion.identity, i % 3 == 0 ? anchorNodeSize : controlNodeSize, EventType.Repaint);
+            Handles.SphereHandleCap(0, selectedRoad[i], Quaternion.identity, i % 3 == 0 ? anchorNodeSize : controlNodeSize, EventType.Repaint);
         }
 
         // Draw selected node as a movement handler
         if (selectedNode != -1)
         {
-            Vector3 newPosition = Handles.DoPositionHandle(road[selectedNode], Quaternion.identity);
-            if (road[selectedNode] != newPosition)
+            Vector3 newPosition = Handles.DoPositionHandle(selectedRoad[selectedNode], Quaternion.identity);
+            if (selectedRoad[selectedNode] != newPosition)
             {
                 Undo.RecordObject(network, "Move Node");
-                road.MoveNode(selectedNode, newPosition);
+                selectedRoad.MoveNode(selectedNode, newPosition);
                 GenerateMesh();
             }
         }
 
         // Draw vehicle paths
-        if (road.equidistantPoints != null)
+        if (selectedRoad.equidistantPoints != null)
         {
             Handles.color = vehiclePathColour;
-            for (int i = 0; i < road.equidistantPoints.Length && (i < road.equidistantPoints.Length - 1 || road.IsRingRoad); i++)
+            for (int i = 0; i < selectedRoad.equidistantPoints.Length && (i < selectedRoad.equidistantPoints.Length - 1 || selectedRoad.IsRingRoad); i++)
             {
-                RoadPoint point0 = road.equidistantPoints[i];
-                RoadPoint point1 = road.equidistantPoints[i < road.equidistantPoints.Length - 1 ? i + 1 : 0];
+                RoadPoint point0 = selectedRoad.equidistantPoints[i];
+                RoadPoint point1 = selectedRoad.equidistantPoints[i < selectedRoad.equidistantPoints.Length - 1 ? i + 1 : 0];
 
-                Handles.DrawLine(point0.Position + point0.Up * 0.1f + point0.Right * road.RoadWidth * 0.25f, point1.Position + point0.Up * 0.1f + point1.Right * road.RoadWidth * 0.25f);
-                Handles.DrawLine(point0.Position + point0.Up * 0.1f - point0.Right * road.RoadWidth * 0.25f, point1.Position + point0.Up * 0.1f - point1.Right * road.RoadWidth * 0.25f);
+                Handles.DrawLine(point0.Position + point0.Up * 0.1f + point0.Right * selectedRoad.RoadWidth * 0.25f, point1.Position + point0.Up * 0.1f + point1.Right * selectedRoad.RoadWidth * 0.25f);
+                Handles.DrawLine(point0.Position + point0.Up * 0.1f - point0.Right * selectedRoad.RoadWidth * 0.25f, point1.Position + point0.Up * 0.1f - point1.Right * selectedRoad.RoadWidth * 0.25f);
             }
         }
     }
@@ -153,7 +157,15 @@ public class RoadNetworkEditor : Editor
         if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 && currentEvent.shift)
         {
             Undo.RecordObject(network, "Create Road Section");
-            road.CreateRoadSection(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), selectedNode, road.RoadWidth * .5f);
+            selectedRoad.CreateRoadSection(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), selectedNode, selectedRoad.RoadWidth * .5f);
+            GenerateMesh();
+        }
+
+        // Create a new road section
+        if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 && currentEvent.control)
+        {
+            selectedRoad = network.CreateNewRoad();
+            Undo.RecordObject(network, "Create New Road");
             GenerateMesh();
         }
 
@@ -161,7 +173,7 @@ public class RoadNetworkEditor : Editor
         if (currentEvent.type == EventType.MouseDown && currentEvent.button == 1)
         {
             Undo.RecordObject(network, "Remove Road Section");
-            road.RemoveRoadSection(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), anchorNodeSize * .5f, controlNodeSize * .5f);
+            selectedRoad.RemoveRoadSection(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), anchorNodeSize * .5f, controlNodeSize * .5f);
             GenerateMesh();
         }
 
@@ -169,7 +181,7 @@ public class RoadNetworkEditor : Editor
         if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0)
         {
             // Attempt to select a node and assign it to newSelectedNode
-            int newSelectedNode = road.SelectNode(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), anchorNodeSize * .5f, controlNodeSize * .5f);
+            int newSelectedNode = selectedRoad.SelectNode(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), anchorNodeSize * .5f, controlNodeSize * .5f);
 
             // If there was a node selected and now there isn't, deselect the node
             if (selectedNode != -1 && newSelectedNode == -1)
@@ -197,124 +209,127 @@ public class RoadNetworkEditor : Editor
         // Reset the road
         if (GUILayout.Button("Reset Road"))
         {
-            network.CreateRoad();
-            road = network.road;
+            network.CreateRoadNetwork();
+            selectedRoad = network.roads[0];
             GenerateMesh();
             SceneView.RepaintAll();
         }
 
-        // Toggle whether or not the road loops
-        bool isRingRoad = GUILayout.Toggle(road.IsRingRoad, "Toggle Ring Road");
-        if (road.IsRingRoad != isRingRoad)
+        if (selectedRoad != null)
         {
-            Undo.RecordObject(network, "Toggle Ring Road");
-            road.IsRingRoad = isRingRoad;
-            GenerateMesh();
-        }
-
-        // Road speed limit
-        road.SpeedLimit = EditorGUILayout.FloatField("Maximum speed limit", road.SpeedLimit);
-
-        // Overall road width
-        float previousWidth = road.RoadWidth;
-        road.RoadWidth = EditorGUILayout.FloatField("Road width", road.RoadWidth);
-        if (previousWidth != road.RoadWidth)
-            GenerateMesh();
-
-        // Texture tiling value, sets the road texture to tile with a consistent length regardless of the road size
-        float previousTiling = road.TextureTiling;
-        road.TextureTiling = EditorGUILayout.Slider("Texture tiling", road.TextureTiling, 0.01f, 1f);
-        if (previousTiling != road.TextureTiling)
-            GenerateMesh();
-
-        // Texture tiling value, sets the road texture to tile with a consistent length regardless of the road size
-        Material previousMaterial = road.Material;
-        road.Material = (Material)EditorGUILayout.ObjectField("Material", road.Material, typeof(Material), false);
-        if (previousMaterial != road.Material)
-        {
-            network.UpdateMaterial(road.Material);
-            GenerateMesh();
-        }
-
-        nodeEditingFoldout = EditorGUILayout.Foldout(nodeEditingFoldout, "Edit Node");
-
-        // Allow the selected node to be edited
-        if (nodeEditingFoldout)
-        {
-            bool doesNodeExist = false;
-            try
+            // Toggle whether or not the road loops
+            bool isRingRoad = GUILayout.Toggle(selectedRoad.IsRingRoad, "Toggle Ring Road");
+            if (selectedRoad.IsRingRoad != isRingRoad)
             {
-                Vector3 node = road[selectedNode];
-                doesNodeExist = true;
+                Undo.RecordObject(network, "Toggle Ring Road");
+                selectedRoad.IsRingRoad = isRingRoad;
+                GenerateMesh();
             }
-            catch (System.ArgumentOutOfRangeException)
+
+            // Road speed limit
+            selectedRoad.SpeedLimit = EditorGUILayout.FloatField("Maximum speed limit", selectedRoad.SpeedLimit);
+
+            // Overall road width
+            float previousWidth = selectedRoad.RoadWidth;
+            selectedRoad.RoadWidth = EditorGUILayout.FloatField("Road width", selectedRoad.RoadWidth);
+            if (previousWidth != selectedRoad.RoadWidth)
+                GenerateMesh();
+
+            // Texture tiling value, sets the road texture to tile with a consistent length regardless of the road size
+            float previousTiling = selectedRoad.TextureTiling;
+            selectedRoad.TextureTiling = EditorGUILayout.Slider("Texture tiling", selectedRoad.TextureTiling, 0.01f, 1f);
+            if (previousTiling != selectedRoad.TextureTiling)
+                GenerateMesh();
+
+            // Texture tiling value, sets the road texture to tile with a consistent length regardless of the road size
+            Material previousMaterial = selectedRoad.Material;
+            selectedRoad.Material = (Material)EditorGUILayout.ObjectField("Material", selectedRoad.Material, typeof(Material), false);
+            if (previousMaterial != selectedRoad.Material)
             {
-                GUILayout.Label("No node selected.");
+                selectedRoad.UpdateMaterial(selectedRoad.Material);
+                GenerateMesh();
             }
-            if (doesNodeExist)
+
+            nodeEditingFoldout = EditorGUILayout.Foldout(nodeEditingFoldout, "Edit Node");
+
+            // Allow the selected node to be edited
+            if (nodeEditingFoldout)
             {
-                // Move node field
-                Vector3 newPosition = EditorGUILayout.Vector3Field("Node Position", road[selectedNode]);
-                if (road[selectedNode] != newPosition)
+                bool doesNodeExist = false;
+                try
                 {
-                    Undo.RecordObject(network, "Move Node");
-                    road.MoveNode(selectedNode, newPosition);
-                    GenerateMesh();
+                    Vector3 node = selectedRoad[selectedNode];
+                    doesNodeExist = true;
                 }
+                catch (System.ArgumentOutOfRangeException)
+                {
+                    GUILayout.Label("No node selected.");
+                }
+                if (doesNodeExist)
+                {
+                    // Move node field
+                    Vector3 newPosition = EditorGUILayout.Vector3Field("Node Position", selectedRoad[selectedNode]);
+                    if (selectedRoad[selectedNode] != newPosition)
+                    {
+                        Undo.RecordObject(network, "Move Node");
+                        selectedRoad.MoveNode(selectedNode, newPosition);
+                        GenerateMesh();
+                    }
 
-                // Insert button creates a new node between the selected node and the next one
-                if (selectedNode % 3 != 0)
-                    GUI.enabled = false;
+                    // Insert button creates a new node between the selected node and the next one
+                    if (selectedNode % 3 != 0)
+                        GUI.enabled = false;
+                    GUILayout.BeginHorizontal();
+                    if (GUILayout.Button("Insert node"))
+                    {
+                        Undo.RecordObject(network, "Insert road section");
+                        selectedRoad.SeperateRoadSection(selectedNode);
+                        selectedNode += 3;
+                        GenerateMesh();
+                    }
+                    // Delete node button, only enabled if the selected node is an anchor node and there is more than 2 anchor nodes
+                    if (selectedRoad.NodeCount < 7)
+                        GUI.enabled = false;
+                    if (GUILayout.Button("Delete Node"))
+                    {
+                        Undo.RecordObject(network, "Remove Road Section");
+                        selectedRoad.RemoveRoadSection(selectedNode);
+                        GenerateMesh();
+                    }
+                    GUI.enabled = true;
+                    GUILayout.EndHorizontal();
+
+                    // Additional node information
+                    EditorGUILayout.LabelField("Node Index: ", selectedNode.ToString());
+                    EditorGUILayout.LabelField("Node Type: ", selectedNode % 3 == 0 ? "Anchor" : "Control");
+                }
+            }
+
+            showEquidistantPointsFoldout = EditorGUILayout.Foldout(showEquidistantPointsFoldout, "Equidistant Point Settings");
+
+            float previousEPD = selectedRoad.equidistantPointDistance;
+            float previousEPA = selectedRoad.equidistantPointAccuracy;
+            if (showEquidistantPointsFoldout)
+            {
+                selectedRoad.equidistantPointDistance = EditorGUILayout.Slider("Distance between points", selectedRoad.equidistantPointDistance, 0.05f, 4f);
+                selectedRoad.equidistantPointAccuracy = EditorGUILayout.Slider("Point calculation accuracy", selectedRoad.equidistantPointAccuracy, 0f, 1f);
+
+                // Equidistant point information
+                EditorGUILayout.LabelField("Number of points: ", selectedRoad.equidistantPoints.Length.ToString());
+            }
+
+            // Manually generate mesh
+            if (GUILayout.Button("Generate Road Mesh") || previousEPD != selectedRoad.equidistantPointDistance || previousEPA != selectedRoad.equidistantPointAccuracy)
+                GenerateMesh();
+
+            // Mesh data
+            if (selectedRoad.equidistantPoints != null)
+            {
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Insert node"))
-                {
-                    Undo.RecordObject(network, "Insert road section");
-                    road.SeperateRoadSection(selectedNode);
-                    selectedNode += 3;
-                    GenerateMesh();
-                }
-                // Delete node button, only enabled if the selected node is an anchor node and there is more than 2 anchor nodes
-                if (road.NodeCount < 7)
-                    GUI.enabled = false;
-                if (GUILayout.Button("Delete Node"))
-                {
-                    Undo.RecordObject(network, "Remove Road Section");
-                    road.RemoveRoadSection(selectedNode);
-                    GenerateMesh();
-                }
-                GUI.enabled = true;
+                EditorGUILayout.LabelField("Tris: " + 6 * selectedRoad.equidistantPoints.Length);
+                EditorGUILayout.LabelField("Verts: " + 2 * selectedRoad.equidistantPoints.Length);
                 GUILayout.EndHorizontal();
-
-                // Additional node information
-                EditorGUILayout.LabelField("Node Index: ", selectedNode.ToString());
-                EditorGUILayout.LabelField("Node Type: ", selectedNode % 3 == 0 ? "Anchor" : "Control");
             }
-        }
-
-        showEquidistantPointsFoldout = EditorGUILayout.Foldout(showEquidistantPointsFoldout, "Equidistant Point Settings");
-
-        float previousEPD = road.equidistantPointDistance;
-        float previousEPA = road.equidistantPointAccuracy;
-        if (showEquidistantPointsFoldout)
-        {
-            road.equidistantPointDistance = EditorGUILayout.Slider("Distance between points", road.equidistantPointDistance, 0.05f, 4f);
-            road.equidistantPointAccuracy = EditorGUILayout.Slider("Point calculation accuracy", road.equidistantPointAccuracy, 0f, 1f);
-
-            // Equidistant point information
-            EditorGUILayout.LabelField("Number of points: ", road.equidistantPoints.Length.ToString());
-        }
-
-        // Manually generate mesh
-        if (GUILayout.Button("Generate Road Mesh") || previousEPD != road.equidistantPointDistance || previousEPA != road.equidistantPointAccuracy)
-            GenerateMesh();
-
-        // Mesh data
-        if (road.equidistantPoints != null)
-        {
-            GUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Tris: " + 6 * road.equidistantPoints.Length);
-            EditorGUILayout.LabelField("Verts: " + 2 * road.equidistantPoints.Length);
-            GUILayout.EndHorizontal();
         }
 
         globalSettingsFoldout = EditorGUILayout.Foldout(globalSettingsFoldout, "Global Settings");
@@ -348,14 +363,17 @@ public class RoadNetworkEditor : Editor
     // Generate the mesh of the road
     public void GenerateMesh()
     {
-        GenerateEquidistantPoints();
-        network.GenerateRoad(RoadMesh.CreateMesh
-        (
-            road.equidistantPoints,
-            road.RoadWidth,
-            road.IsRingRoad
-        ),
-        new Vector2(1, Mathf.RoundToInt(road.TextureTiling * road.equidistantPoints.Length * road.equidistantPointDistance)));
+        if (selectedRoad != null)
+        {
+            GenerateEquidistantPoints();
+            selectedRoad.GenerateRoad(RoadMesh.CreateMesh
+            (
+                selectedRoad.equidistantPoints,
+                selectedRoad.RoadWidth,
+                selectedRoad.IsRingRoad
+            ),
+            new Vector2(1, Mathf.RoundToInt(selectedRoad.TextureTiling * selectedRoad.equidistantPoints.Length * selectedRoad.equidistantPointDistance)));
+        }
     }
 
     // Generates equidistant points along the road, returns false if there are too many points
@@ -363,16 +381,16 @@ public class RoadNetworkEditor : Editor
     {
         List<Vector3> positions = new List<Vector3>();
 
-        positions.Add(road[0]); // Start with the position of the first node
-        Vector3 previousPoint = road[0];
+        positions.Add(selectedRoad[0]); // Start with the position of the first node
+        Vector3 previousPoint = selectedRoad[0];
         float previousDistance = 0f;
-        for (int i = 0; i < road.SectionCount; i++)
+        for (int i = 0; i < selectedRoad.SectionCount; i++)
         {
-            Vector3[] roadSection = road.GetRoadSection(i);
+            Vector3[] roadSection = selectedRoad.GetRoadSection(i);
 
-            float nodePerimeterLength = Vector3.Distance(road[0], road[1]) + Vector3.Distance(road[1], road[2]) + Vector3.Distance(road[2], road[3]);
-            float estimatedLength = Vector3.Distance(road[0], road[3]) + nodePerimeterLength * 0.5f;
-            int divisions = Mathf.CeilToInt(estimatedLength * road.equidistantPointAccuracy * 10);
+            float nodePerimeterLength = Vector3.Distance(selectedRoad[0], selectedRoad[1]) + Vector3.Distance(selectedRoad[1], selectedRoad[2]) + Vector3.Distance(selectedRoad[2], selectedRoad[3]);
+            float estimatedLength = Vector3.Distance(selectedRoad[0], selectedRoad[3]) + nodePerimeterLength * 0.5f;
+            int divisions = Mathf.CeilToInt(estimatedLength * selectedRoad.equidistantPointAccuracy * 10);
 
             // Keep placing points along the curve until the end of the road section
             float time = 0;
@@ -382,9 +400,9 @@ public class RoadNetworkEditor : Editor
                 Vector3 point = Curve.CubicCurve(roadSection[0], roadSection[1], roadSection[2], roadSection[3], time);
                 previousDistance += Vector3.Distance(previousPoint, point);
 
-                while (previousDistance >= road.equidistantPointDistance)
+                while (previousDistance >= selectedRoad.equidistantPointDistance)
                 {
-                    float overEstimate = previousDistance - road.equidistantPointDistance;
+                    float overEstimate = previousDistance - selectedRoad.equidistantPointDistance;
                     Vector3 adjustedPoint = point + (previousPoint - point).normalized * overEstimate;
                     positions.Add(adjustedPoint);
                     previousDistance = overEstimate;
@@ -402,14 +420,14 @@ public class RoadNetworkEditor : Editor
         for (int i = 0; i < positions.Count; i++)
         {
             Vector3 forward = Vector3.zero;
-            if (i < positions.Count - 1 || road.IsRingRoad)
+            if (i < positions.Count - 1 || selectedRoad.IsRingRoad)
                 forward += positions[(i + 1) % positions.Count] - positions[i];
-            if (i > 0 || road.IsRingRoad)
+            if (i > 0 || selectedRoad.IsRingRoad)
                 forward += positions[i] - positions[(i - 1 + positions.Count) % positions.Count];
             forward.Normalize();
             roadPoints.Add(new RoadPoint(positions[i], forward));
         }
-        road.equidistantPoints = roadPoints.ToArray(); // Convert the point list and store it in the road class
+        selectedRoad.equidistantPoints = roadPoints.ToArray(); // Convert the point list and store it in the road class
         return true;
     }
 
