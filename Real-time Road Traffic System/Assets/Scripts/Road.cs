@@ -50,6 +50,7 @@ public class Road
             centre + Vector3.right * 2f,
             centre + Vector3.right * 5f
         };
+        speedLimit = 20f;
         roadWidth = 3.5f;
         textureTiling = 0.07f;
         equidistantPointDistance = 1f;

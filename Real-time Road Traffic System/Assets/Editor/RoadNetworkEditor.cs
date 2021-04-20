@@ -309,10 +309,13 @@ public class RoadNetworkEditor : Editor
             GenerateMesh();
 
         // Mesh data
-        GUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField("Tris: " + 6 * road.equidistantPoints.Length);
-        EditorGUILayout.LabelField("Verts: " + 2 * road.equidistantPoints.Length);
-        GUILayout.EndHorizontal();
+        if (road.equidistantPoints != null)
+        {
+            GUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Tris: " + 6 * road.equidistantPoints.Length);
+            EditorGUILayout.LabelField("Verts: " + 2 * road.equidistantPoints.Length);
+            GUILayout.EndHorizontal();
+        }
 
         globalSettingsFoldout = EditorGUILayout.Foldout(globalSettingsFoldout, "Global Settings");
 
