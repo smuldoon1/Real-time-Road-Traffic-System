@@ -8,6 +8,8 @@ public class Vehicle : MonoBehaviour
     public RoadNetwork roadNetwork;
     Road road;
 
+    Collider vehicleCollider;
+
     public float topSpeed = 6f; // The maximum speed of the vehicle. It will try to stay at this speed if there are no obstacles or speed limit preventing this
     public float speedCheckDistance = 1f; // How far in front of the vehicle will be checked to test for corners or obstructions, based on the vehicles current velocity
     [Min(0)]
@@ -29,6 +31,9 @@ public class Vehicle : MonoBehaviour
     {
         road = roadNetwork.roads[0];
         UpdateRouteData();
+
+        vehicleCollider = GetComponent<Collider>();
+
         StartCoroutine(Drive());
     }
 
@@ -81,22 +86,27 @@ public class Vehicle : MonoBehaviour
         return Vector3.Lerp(path[index0].Forward, path[index1].Forward, time);
     }
 
-    // Calculate the speed the vehicle should be travelling at
+    // Calculate the speed the vehicle should be travelling at; factoring in the speed limit, road topology and possible obstructions
     float CalculateSpeed()
     {
         // Slow down for objects in the vehicles immediate path
         float nearestObstructionDistance = Mathf.Infinity; 
-        int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, speedCheckDistance) / road.equidistantPointDistance + GetComponent<Collider>().bounds.size.z * 0.5f);
+        int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, speedCheckDistance) / road.equidistantPointDistance);
         for (int i = 0; i < numberOfPoints; i++)
         {
             Vector3 position = path[(path.Length + currentPoint + (lane == Lane.LEFT ? i : -i)) % path.Length].Position;
-            Collider[] colliders = Physics.OverlapSphere(position, road.RoadWidth * 0.25f, ~LayerMask.GetMask("Vehicle Ignore"));
+            Collider[] colliders = Physics.OverlapSphere(position, road.RoadWidth * 0.225f, ~LayerMask.GetMask("Vehicle Ignore"));
+            
+            // For each collider in the immediate path of the vehicle (except the vehicle itself), check the exact distance away from it
+            // nearestObstructionDistance is always the distance from the closest point of this vehicle to the closest point of the closest collider
             foreach (Collider c in colliders)
             {
                 if (c.transform != transform)
-                    nearestObstructionDistance = Mathf.Min(nearestObstructionDistance, Vector3.Distance(transform.position + (transform.localScale), c.transform.position + (c.transform.localScale)));
+                    nearestObstructionDistance = Mathf.Min(nearestObstructionDistance, Vector3.Distance(vehicleCollider.ClosestPoint(c.transform.position), c.ClosestPoint(transform.position)));
             }
         }
+        // Use the obstruction distance / the checked distance to get 'x'
+        // Then use the function:  y = (b+1)x - b  (where b is obstructionBreakingAmount) to get the actual breaking amount from 0 - 1
         float obstructionFactor = Mathf.Clamp((obstructionBreakingAmount + 1) * Mathf.Pow(nearestObstructionDistance / speedCheckDistance, 1) - obstructionBreakingAmount, 0f, 1f);
 
 
