@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Collider))]
 public class Vehicle : MonoBehaviour
 {
     public RoadNetwork roadNetwork;
@@ -10,9 +11,11 @@ public class Vehicle : MonoBehaviour
     public float topSpeed = 6f; // The maximum speed of the vehicle. It will try to stay at this speed if there are no obstacles or speed limit preventing this
     public float speedCheckDistance = 1f; // How far in front of the vehicle will be checked to test for corners or obstructions, based on the vehicles current velocity
     [Min(0)]
+    public float obstructionBreakingAmount; // How far away an obstruction can be before applying breaking
+    [Min(0)]
     public float turningSharpness = 3f; // The sharpness of the speed increase/decrease when turning
     [Range(0, 1)]
-    public float minimumTurningSpeed = 0.6f; // The minimum decrease when turning. In the range of 0 - 1
+    public float minimumTurningFactor = 0.4f; // The minimum decrease when turning. In the range of 0 - 1
 
     public float velocity;
     public int currentPoint;
@@ -78,15 +81,34 @@ public class Vehicle : MonoBehaviour
         return Vector3.Lerp(path[index0].Forward, path[index1].Forward, time);
     }
 
+    // Calculate the speed the vehicle should be travelling at
     float CalculateSpeed()
     {
-        float totalMagnitude = 0f;
-        int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, velocity * speedCheckDistance) / road.equidistantPointDistance);
-        for (int i = 1; i < numberOfPoints; i++)
-            totalMagnitude += (path[(path.Length + currentPoint + (lane == Lane.LEFT ? i : -i)) % path.Length].Forward - path[currentPoint].Forward).magnitude;
-        float magnitude = totalMagnitude /= numberOfPoints - 1;
-        float turningFactor = Mathf.Clamp(-minimumTurningSpeed * Mathf.Pow(magnitude, turningSharpness) + 1f, 1 - minimumTurningSpeed, 1f);
-        return Mathf.Min(road.SpeedLimit * turningFactor, topSpeed * turningFactor);
+        // Slow down for objects in the vehicles immediate path
+        float nearestObstructionDistance = Mathf.Infinity; 
+        int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, speedCheckDistance) / road.equidistantPointDistance + GetComponent<Collider>().bounds.size.z * 0.5f);
+        for (int i = 0; i < numberOfPoints; i++)
+        {
+            Vector3 position = path[(path.Length + currentPoint + (lane == Lane.LEFT ? i : -i)) % path.Length].Position;
+            Collider[] colliders = Physics.OverlapSphere(position, road.RoadWidth * 0.25f, ~LayerMask.GetMask("Vehicle Ignore"));
+            foreach (Collider c in colliders)
+            {
+                if (c.transform != transform)
+                    nearestObstructionDistance = Mathf.Min(nearestObstructionDistance, Vector3.Distance(transform.position + (transform.localScale), c.transform.position + (c.transform.localScale)));
+            }
+        }
+        float obstructionFactor = Mathf.Clamp((obstructionBreakingAmount + 1) * Mathf.Pow(nearestObstructionDistance / speedCheckDistance, 1) - obstructionBreakingAmount, 0f, 1f);
+
+
+        // Turning speed calculation
+        float cornerMagnitude = 0f;
+        numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, velocity / topSpeed * speedCheckDistance / road.equidistantPointDistance));
+        for (int i = 0; i < numberOfPoints; i++)
+            cornerMagnitude += (path[(path.Length + currentPoint + (lane == Lane.LEFT ? i : -i)) % path.Length].Forward - path[currentPoint].Forward).magnitude;
+        float turningFactor = Mathf.Clamp(-(1 - minimumTurningFactor) * Mathf.Pow(cornerMagnitude /= numberOfPoints, turningSharpness) + 1f, minimumTurningFactor, 1f);
+
+        // Finally, return the final calculated speed
+        return Mathf.Min(road.SpeedLimit, topSpeed * turningFactor * obstructionFactor);
     }
 
     private void OnDrawGizmos()
@@ -96,7 +118,7 @@ public class Vehicle : MonoBehaviour
             Gizmos.color = Color.blue;
             Gizmos.DrawLine(path[currentPoint].Position, path[currentPoint].Position + path[currentPoint].Forward * 3f);
             Gizmos.color = Color.red;
-            int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, velocity * speedCheckDistance) / road.equidistantPointDistance);
+            int numberOfPoints = Mathf.FloorToInt(Mathf.Max(5f, velocity / topSpeed * speedCheckDistance / road.equidistantPointDistance));
             for (int i = 1; i < numberOfPoints; i++)
             {
                 float magnitude = (path[(path.Length + currentPoint + (lane == Lane.LEFT ? i : -i)) % path.Length].Forward - path[currentPoint].Forward).magnitude;

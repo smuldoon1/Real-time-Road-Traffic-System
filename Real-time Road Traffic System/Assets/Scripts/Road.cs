@@ -59,6 +59,7 @@ public class Road : MonoBehaviour
         textureTiling = 0.07f;
         equidistantPointDistance = 1f;
         equidistantPointAccuracy = 1f;
+        gameObject.layer = 9;
     }
 
     // Return a node given its index
@@ -212,7 +213,6 @@ public class Road : MonoBehaviour
     // Can be used to change the position of a node
     public void MoveNode(int nodeIndex, Vector3 newPosition)
     {
-        Debug.Log(Time.deltaTime);
         Vector3 movementChange = newPosition - nodes[nodeIndex];
         nodes[nodeIndex] = newPosition;
 
