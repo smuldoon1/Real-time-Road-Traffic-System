@@ -28,21 +28,22 @@ public class RoadNetworkEditor : Editor
     static float controlNodeSize;
     static float equidistantPointSize;
 
-    Tool previousTool = Tool.None;
+    static Material defaultMaterial;
 
-    RoadNetworkEditor()
-    {
-        // If this is the first time selecting a road, the global settings will not have been set yet so call ResetGlobals
-        if (!areGlobalsSet)
-            ResetGlobals();
-    }
+    Tool previousTool = Tool.None;
 
     private void OnEnable()
     {
         network = (RoadNetwork)target;
+
+        // If this is the first time selecting a road, the global settings will not have been set yet so call ResetGlobals
+        if (!areGlobalsSet)
+            ResetGlobals();
+
         if (network.roads == null || network.roads.Count == 0)
-            network.CreateRoadNetwork();
-        selectedRoad = network.roads[0];
+            network.CreateRoadNetwork(defaultMaterial);
+
+        selectedRoad = network.ActiveRoad;
 
         // Disables the default transform/rotation/other handle when first selecting the road network
         previousTool = Tools.current;
@@ -50,6 +51,10 @@ public class RoadNetworkEditor : Editor
 
         // Ensures the mesh is regenerated when the developer undos or redos
         Undo.undoRedoPerformed += GenerateMesh;
+
+        network.OnRoadSelected += SelectRoad;
+
+        Debug.Log(network.roads.Count);
     }
 
     // Reset the global settings back to their default values
@@ -68,11 +73,18 @@ public class RoadNetworkEditor : Editor
         anchorNodeSize = 1f;
         controlNodeSize = 0.5f;
         equidistantPointSize = 0.35f;
+
+        defaultMaterial = (Material)AssetDatabase.LoadAssetAtPath("Assets/Materials/Road-hd.mat", typeof(Material));
+    }
+
+    void SelectRoad(Road activeRoad)
+    {
+        if (activeRoad != null)
+            selectedRoad = activeRoad;
     }
 
     private void OnSceneGUI()
     {
-        selectedRoad = network.ActiveRoad;
         try
         {
             if (selectedRoad != null)
@@ -164,7 +176,7 @@ public class RoadNetworkEditor : Editor
         // Create a new road section
         if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 && currentEvent.control)
         {
-            selectedRoad = network.CreateNewRoad();
+            selectedRoad = network.CreateNewRoad(defaultMaterial);
             Undo.RecordObject(network, "Create New Road");
             GenerateMesh();
         }
@@ -200,6 +212,13 @@ public class RoadNetworkEditor : Editor
                 currentEvent.Use();
             }
         }
+
+        if (currentEvent.type == EventType.KeyDown && currentEvent.keyCode == KeyCode.Delete)
+        {
+            DestroyImmediate(selectedRoad.gameObject);
+            selectedRoad = null;
+            currentEvent.Use();
+        }
     }
 
     public override void OnInspectorGUI()
@@ -209,7 +228,7 @@ public class RoadNetworkEditor : Editor
         // Reset the road
         if (GUILayout.Button("Reset Road"))
         {
-            network.CreateRoadNetwork();
+            network.CreateRoadNetwork(defaultMaterial);
             selectedRoad = network.roads[0];
             GenerateMesh();
             SceneView.RepaintAll();
@@ -348,6 +367,8 @@ public class RoadNetworkEditor : Editor
             roadPathColour = EditorGUILayout.ColorField("Road path colour", roadPathColour);
             vehiclePathColour = EditorGUILayout.ColorField("Vehicle path colour", vehiclePathColour);
 
+            defaultMaterial = (Material)EditorGUILayout.ObjectField("Vehicle path colour", defaultMaterial, typeof(Material), true);
+
             if (GUILayout.Button("Reset Global Settings"))
                 ResetGlobals();
         }
@@ -435,6 +456,10 @@ public class RoadNetworkEditor : Editor
     {
         // Enables the tool again once the road is deselected
         Tools.current = previousTool;
+
+        Undo.undoRedoPerformed -= GenerateMesh;
+
+        network.OnRoadSelected -= SelectRoad;
     }
 }
 
