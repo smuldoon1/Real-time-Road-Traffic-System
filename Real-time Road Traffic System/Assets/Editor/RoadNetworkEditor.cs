@@ -53,8 +53,6 @@ public class RoadNetworkEditor : Editor
         Undo.undoRedoPerformed += GenerateMesh;
 
         network.OnRoadSelected += SelectRoad;
-
-        Debug.Log(network.roads.Count);
     }
 
     // Reset the global settings back to their default values
@@ -139,7 +137,7 @@ public class RoadNetworkEditor : Editor
             Vector3 newPosition = Handles.DoPositionHandle(selectedRoad[selectedNode], Quaternion.identity);
             if (selectedRoad[selectedNode] != newPosition)
             {
-                Undo.RecordObject(network, "Move Node");
+                Undo.RecordObject(selectedRoad, "Move Node");
                 selectedRoad.MoveNode(selectedNode, newPosition);
                 GenerateMesh();
             }
@@ -168,7 +166,7 @@ public class RoadNetworkEditor : Editor
         // Create a new road section
         if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 && currentEvent.shift)
         {
-            Undo.RecordObject(network, "Create Road Section");
+            Undo.RecordObject(selectedRoad, "Create Road Section");
             selectedRoad.CreateRoadSection(HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), selectedNode, selectedRoad.RoadWidth * .5f);
             GenerateMesh();
         }
@@ -177,7 +175,7 @@ public class RoadNetworkEditor : Editor
         if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 && currentEvent.control)
         {
             selectedRoad = network.CreateNewRoad(defaultMaterial);
-            Undo.RecordObject(network, "Create New Road");
+            Undo.RecordObject(network, "Create new road");
             GenerateMesh();
         }
 
@@ -198,7 +196,7 @@ public class RoadNetworkEditor : Editor
             // If there was a node selected and now there isn't, deselect the node
             if (selectedNode != -1 && newSelectedNode == -1)
             {
-                Undo.RecordObject(network, "Deselect Anchor Node");
+                Undo.RecordObject(selectedRoad, "Deselect Anchor Node");
                 selectedNode = -1;
             }
             // If a node has been selected other than itself, select the node
@@ -206,17 +204,17 @@ public class RoadNetworkEditor : Editor
             {
                 GUIUtility.hotControl = GUIUtility.GetControlID(FocusType.Passive); // Stops the road network object losing focus when the mouse is left-clicked
 
-                Undo.RecordObject(network, "Select Anchor Node");
+                Undo.RecordObject(selectedRoad, "Select Anchor Node");
                 selectedNode = newSelectedNode;
 
                 currentEvent.Use();
             }
         }
 
+        // Delete the selected road when pressing DEL
         if (currentEvent.type == EventType.KeyDown && currentEvent.keyCode == KeyCode.Delete)
         {
-            DestroyImmediate(selectedRoad.gameObject);
-            selectedRoad = null;
+            DeleteRoad();
             currentEvent.Use();
         }
     }
@@ -225,14 +223,21 @@ public class RoadNetworkEditor : Editor
     {
         base.OnInspectorGUI();
 
-        // Reset the road
-        if (GUILayout.Button("Reset Road"))
+        EditorGUILayout.BeginHorizontal();
+        // Delete the road
+        if (GUILayout.Button("Delete Road"))
+            DeleteRoad();
+
+        // Reset the entire road network
+        if (GUILayout.Button("Reset Road Network"))
         {
+            Undo.RecordObject(network, "Reset road network");
             network.CreateRoadNetwork(defaultMaterial);
             selectedRoad = network.roads[0];
             GenerateMesh();
             SceneView.RepaintAll();
         }
+        EditorGUILayout.EndHorizontal();
 
         if (selectedRoad != null)
         {
@@ -240,7 +245,7 @@ public class RoadNetworkEditor : Editor
             bool isRingRoad = GUILayout.Toggle(selectedRoad.IsRingRoad, "Toggle Ring Road");
             if (selectedRoad.IsRingRoad != isRingRoad)
             {
-                Undo.RecordObject(network, "Toggle Ring Road");
+                Undo.RecordObject(selectedRoad, "Toggle Ring Road");
                 selectedRoad.IsRingRoad = isRingRoad;
                 GenerateMesh();
             }
@@ -290,7 +295,7 @@ public class RoadNetworkEditor : Editor
                     Vector3 newPosition = EditorGUILayout.Vector3Field("Node Position", selectedRoad[selectedNode]);
                     if (selectedRoad[selectedNode] != newPosition)
                     {
-                        Undo.RecordObject(network, "Move Node");
+                        Undo.RecordObject(selectedRoad, "Move Node");
                         selectedRoad.MoveNode(selectedNode, newPosition);
                         GenerateMesh();
                     }
@@ -301,7 +306,7 @@ public class RoadNetworkEditor : Editor
                     GUILayout.BeginHorizontal();
                     if (GUILayout.Button("Insert node"))
                     {
-                        Undo.RecordObject(network, "Insert road section");
+                        Undo.RecordObject(selectedRoad, "Insert road section");
                         selectedRoad.SeperateRoadSection(selectedNode);
                         selectedNode += 3;
                         GenerateMesh();
@@ -311,7 +316,7 @@ public class RoadNetworkEditor : Editor
                         GUI.enabled = false;
                     if (GUILayout.Button("Delete Node"))
                     {
-                        Undo.RecordObject(network, "Remove Road Section");
+                        Undo.RecordObject(selectedRoad, "Remove Road Section");
                         selectedRoad.RemoveRoadSection(selectedNode);
                         GenerateMesh();
                     }
@@ -376,9 +381,16 @@ public class RoadNetworkEditor : Editor
         if (GUI.changed)
         {
             EditorUtility.SetDirty(network);
-            Undo.RecordObject(network, "Road network changes");
+            Undo.RecordObject(selectedRoad, "Road network changes");
             GenerateMesh();
         }
+    }
+
+    // Deletes the selected road
+    void DeleteRoad()
+    {
+        Undo.DestroyObjectImmediate(selectedRoad.gameObject);
+        selectedRoad = null;
     }
 
     // Generate the mesh of the road
@@ -461,9 +473,4 @@ public class RoadNetworkEditor : Editor
 
         network.OnRoadSelected -= SelectRoad;
     }
-}
-
-public enum PathMode
-{
-    NONE, CONTINUOUS, INTERVALS
 }

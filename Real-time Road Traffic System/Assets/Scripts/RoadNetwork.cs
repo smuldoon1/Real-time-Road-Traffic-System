@@ -9,9 +9,6 @@ public class RoadNetwork : MonoBehaviour
 
     Road activeRoad;
 
-    public delegate void RoadUpdateEvent();
-    public event RoadUpdateEvent OnRoadChanged;
-
     public delegate void RoadSelectEvent(Road road);
     public event RoadSelectEvent OnRoadSelected;
 

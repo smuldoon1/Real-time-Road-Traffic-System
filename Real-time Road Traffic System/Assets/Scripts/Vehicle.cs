@@ -89,16 +89,6 @@ public class Vehicle : MonoBehaviour
         return Mathf.Min(road.SpeedLimit * turningFactor, topSpeed * turningFactor);
     }
 
-    private void OnEnable()
-    {      
-        roadNetwork.OnRoadChanged += UpdateRouteData;
-    }
-
-    private void OnDisable()
-    {
-        roadNetwork.OnRoadChanged -= UpdateRouteData;
-    }
-
     private void OnDrawGizmos()
     {
         if (Application.isPlaying && road != null)
