@@ -37,8 +37,8 @@ public struct RoadPoint
         get { return Vector3.Cross(Right, Forward).normalized; }
     }
 
-    public Quaternion ForwardRotation
+    public Quaternion Rotation
     {   
-        get { return Quaternion.Euler(Forward * Mathf.Deg2Rad); }
+        get { return Quaternion.LookRotation(Forward, Up); }
     }
 }
