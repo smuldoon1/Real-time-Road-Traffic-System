@@ -109,7 +109,7 @@ public class Vehicle : MonoBehaviour
             
             // For each collider in the immediate path of the vehicle (except the vehicle itself), check the exact distance away from it
             // nearestObstructionDistance is always the distance from the closest point of this vehicle to the closest point of the closest collider
-            foreach (BoxCollider c in colliders)
+            foreach (Collider c in colliders)
             {
                 if (c.transform != transform)
                     nearestObstructionDistance = Mathf.Min(nearestObstructionDistance, Vector3.Distance(vehicleCollider.ClosestPoint(c.transform.position), c.ClosestPoint(transform.position)));
