@@ -10,7 +10,15 @@ public class TrafficLight : MonoBehaviour
     Collider blockingCollider; // Collider used to block vehicles when there is a red light
     TrafficLightBulbs bulbs; // Component used for changing the emission of each light bulb on or off
 
-    bool currentMode; // The traffic lights current mode
+    int currentMode; // The traffic lights current mode (0 = red, 1 = red & amber, 2 = green, 3 = amber
+
+    public int GetMode
+    {
+        get
+        {
+            return currentMode;
+        }
+    }
 
     private void Awake()
     {
@@ -29,20 +37,22 @@ public class TrafficLight : MonoBehaviour
     // Sets the light bulb emission according to the UK traffic light sequence
     IEnumerator SetMode(int mode, float transitionTime)
     {
-        if (modeSetting[mode] && !currentMode)
+        if (modeSetting[mode] && currentMode == 0)
         {
-            currentMode = true;
+            currentMode = 1;
             bulbs.SetLights(true, true, false);
             yield return new WaitForSeconds(transitionTime);
+            currentMode = 2;
             bulbs.SetLights(false, false, true);
             blockingCollider.enabled = false;
         }
-        else if (!modeSetting[mode] && currentMode)
+        else if (!modeSetting[mode] && currentMode == 2)
         {
-            currentMode = false;
+            currentMode = 3;
             bulbs.SetLights(false, true, false);
             blockingCollider.enabled = true;
             yield return new WaitForSeconds(transitionTime);
+            currentMode = 0;
             bulbs.SetLights(true, false, false);
         }
     }
