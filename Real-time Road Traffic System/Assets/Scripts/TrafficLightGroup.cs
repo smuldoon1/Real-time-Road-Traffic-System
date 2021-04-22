@@ -5,9 +5,8 @@ using UnityEngine;
 public class TrafficLightGroup : MonoBehaviour
 {
     public TrafficLight[] trafficLights; // Array of traffic lights that are linked together
-    public int modes; // How many modes the traffic light group will switch between
-    public float modeDuration; // How long between each mode toggle
-    public float transitionTime; // How long an amber light lasts between each traffic light switch
+    public float[] modeDurations; // How long between each mode change, size of the array determines the number of modes
+    public float transitionTime; // Time between traffic light changes
 
     public int currentMode; // The current mode of the traffic light group, it will also start on this mode
 
@@ -21,11 +20,11 @@ public class TrafficLightGroup : MonoBehaviour
     private void Update()
     {
         time += Time.deltaTime;
-        if (time >= modeDuration)
+        if (time >= modeDurations[currentMode])
         {
             time = 0;
             currentMode++;
-            if (currentMode == modes)
+            if (currentMode == modeDurations.Length)
                 currentMode = 0;
             ToggleTrafficLights(currentMode);
         }
@@ -36,7 +35,7 @@ public class TrafficLightGroup : MonoBehaviour
     {
         foreach (TrafficLight tl in trafficLights)
         {
-            tl.SetMode(mode);
+            tl.UpdateMode(mode, transitionTime);
         }
     }
 }
