@@ -72,7 +72,7 @@ public class RoadNetworkEditor : Editor
         controlNodeSize = 0.5f;
         equidistantPointSize = 0.35f;
 
-        defaultMaterial = (Material)AssetDatabase.LoadAssetAtPath("Assets/Materials/Road-hd.mat", typeof(Material));
+        defaultMaterial = (Material)EditorGUIUtility.Load("Materials/Road-hd.mat");
     }
 
     void SelectRoad(Road activeRoad)
@@ -372,7 +372,7 @@ public class RoadNetworkEditor : Editor
             roadPathColour = EditorGUILayout.ColorField("Road path colour", roadPathColour);
             vehiclePathColour = EditorGUILayout.ColorField("Vehicle path colour", vehiclePathColour);
 
-            defaultMaterial = (Material)EditorGUILayout.ObjectField("Vehicle path colour", defaultMaterial, typeof(Material), true);
+            defaultMaterial = (Material)EditorGUILayout.ObjectField("Default road material", defaultMaterial, typeof(Material), true);
 
             if (GUILayout.Button("Reset Global Settings"))
                 ResetGlobals();
@@ -381,7 +381,10 @@ public class RoadNetworkEditor : Editor
         if (GUI.changed)
         {
             EditorUtility.SetDirty(network);
-            Undo.RecordObject(selectedRoad, "Road network changes");
+            if (selectedRoad != null)
+                Undo.RecordObject(selectedRoad, "Road changes");
+            else
+                Undo.RecordObject(network, "Road network changes");
             GenerateMesh();
         }
     }
