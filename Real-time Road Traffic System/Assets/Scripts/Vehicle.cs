@@ -11,6 +11,7 @@ public class Vehicle : MonoBehaviour
     public Lane lane; // The current lane the vehicle is on
 
     public float topSpeed = 10f; // The maximum speed of the vehicle. It will try to stay at this speed if there are no obstacles or speed limit preventing this
+    public float acceleration = 2f; // How quickly the vehicle will reach its target speed. Does not affect slowing down
     public float speedCheckDistance = 10f; // How far in front of the vehicle will be checked to test for corners or obstructions, based on the vehicles current velocity
     [Min(0)]
     public float obstructionBreakingAmount = 0.2f; // How far away an obstruction can be before applying breaking
@@ -73,7 +74,8 @@ public class Vehicle : MonoBehaviour
         transform.position = LerpedPosition(currentPoint, lane == 0 ? 1 : -1);
         transform.forward = LerpedForward(currentPoint, lane == 0 ? 1 : -1);
 
-        velocity = CalculateSpeed();
+        float targetVelocity = CalculateSpeed();
+        velocity = Mathf.Min(velocity + (targetVelocity * Time.deltaTime * acceleration), targetVelocity);
 
         time += Time.deltaTime * velocity / pointDistance;
         if (time >= 1)

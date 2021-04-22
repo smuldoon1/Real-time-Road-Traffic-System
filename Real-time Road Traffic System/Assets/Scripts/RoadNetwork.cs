@@ -5,13 +5,15 @@ using UnityEngine;
 public class RoadNetwork : MonoBehaviour
 {
     [HideInInspector]
-    public List<Road> roads;
+    public List<Road> roads; // The list of all roads used in this network
 
     Road activeRoad;
 
+    // Event used by the editor to detect when a road has been selected
     public delegate void RoadSelectEvent(Road road);
     public event RoadSelectEvent OnRoadSelected;
 
+    // Resets the road netwoek and creates a single basic road
     public void CreateRoadNetwork(Material defaultMaterial)
     {
         foreach (Road road in roads)
@@ -29,6 +31,7 @@ public class RoadNetwork : MonoBehaviour
         CreateNewRoad(defaultMaterial);
     }
 
+    // Creates a new road using a default material
     public Road CreateNewRoad(Material defaultMaterial)
     {
         Road newRoad = new GameObject("Road (" + roads.Count + ")").AddComponent<Road>();
@@ -39,6 +42,7 @@ public class RoadNetwork : MonoBehaviour
         return newRoad;
     }
 
+    // The networks currently selected road
     public Road ActiveRoad
     {
         get

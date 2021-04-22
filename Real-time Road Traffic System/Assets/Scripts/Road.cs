@@ -10,10 +10,10 @@ public class Road : MonoBehaviour
     public event RoadUpdateEvent OnRoadChanged;
 
     [SerializeField, HideInInspector]
-    public RoadPoint[] lane0;
+    public RoadPoint[] lane0; // The 'left' lane
 
     [SerializeField, HideInInspector]
-    public RoadPoint[] lane1;
+    public RoadPoint[] lane1; // The 'right' lane
 
     [SerializeField, HideInInspector]
     List<Vector3> nodes; // Nodes follow the pattern :- anchor, control, control, anchor, control control, anchor, control etc.
@@ -39,9 +39,11 @@ public class Road : MonoBehaviour
 
     // The desired distance between each point along the road
     // A smaller distance makes the road edges and car movement smoother but can have a severe impact on the performance
+    [HideInInspector]
     public float equidistantPointDistance;
 
-    // The accuracy of the equidistant point calculation, does not affect computation 
+    // The accuracy of the equidistant point calculation, does not affect computation
+    [HideInInspector]
     public float equidistantPointAccuracy;
 
     // Places the four initial control nodes at arbitrary positions
@@ -55,7 +57,7 @@ public class Road : MonoBehaviour
             centre + Vector3.right * 5f
         };
         speedLimit = 20f;
-        roadWidth = 3.5f;
+        roadWidth = 4f;
         textureTiling = 0.07f;
         equidistantPointDistance = 1f;
         equidistantPointAccuracy = 1f;

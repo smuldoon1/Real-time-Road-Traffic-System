@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// This class heavily uses code written by Sebastian Lague in his Curve Editor series (2018)
+// The code has been modified slightly
 public static class RoadMesh
 {
     // Create a mesh based on a path of equidistant points
