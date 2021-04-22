@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Collider))]
+[RequireComponent(typeof(BoxCollider))]
 public class Vehicle : MonoBehaviour
 {
     public RoadNetwork roadNetwork; // The user-set network the vehicle should use
