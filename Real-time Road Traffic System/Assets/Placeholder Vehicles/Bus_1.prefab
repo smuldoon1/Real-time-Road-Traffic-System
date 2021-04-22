@@ -377,7 +377,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roadNetwork: {fileID: 0}
   lane: 0
-  topSpeed: 6
+  topSpeed: 8
+  acceleration: 1
   speedCheckDistance: 12
   obstructionBreakingAmount: 0.2
   turningSharpness: 3

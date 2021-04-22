@@ -39,6 +39,7 @@ public class Road : MonoBehaviour
 
     // The desired distance between each point along the road
     // A smaller distance makes the road edges and car movement smoother but can have a severe impact on the performance
+    // It is advised to increase this distance when editing the road for performance reasons
     [HideInInspector]
     public float equidistantPointDistance;
 

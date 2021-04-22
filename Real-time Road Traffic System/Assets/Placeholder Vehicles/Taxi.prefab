@@ -382,6 +382,7 @@ MonoBehaviour:
   roadNetwork: {fileID: 0}
   lane: 0
   topSpeed: 12
+  acceleration: 2.5
   speedCheckDistance: 10
   obstructionBreakingAmount: 0.2
   turningSharpness: 3
