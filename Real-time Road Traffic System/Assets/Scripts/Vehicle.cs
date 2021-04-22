@@ -13,7 +13,7 @@ public class Vehicle : MonoBehaviour
     public float topSpeed = 10f; // The maximum speed of the vehicle. It will try to stay at this speed if there are no obstacles or speed limit preventing this
     public float speedCheckDistance = 10f; // How far in front of the vehicle will be checked to test for corners or obstructions, based on the vehicles current velocity
     [Min(0)]
-    public float obstructionBreakingAmount = 0.1f; // How far away an obstruction can be before applying breaking
+    public float obstructionBreakingAmount = 0.2f; // How far away an obstruction can be before applying breaking
     [Min(0)]
     public float turningSharpness = 3f; // The sharpness of the speed increase/decrease when turning
     [Range(0, 1)]
@@ -27,8 +27,16 @@ public class Vehicle : MonoBehaviour
     float pointDistance; // The distance between these equally spaced points
 
     BoxCollider vehicleCollider; // All vehicles need a collider so that other vehicles can detect them
+    LayerMask collisionMask; // Collision mask used to ignore colliders in vehicle collision detection
 
     public bool showCollisionBounds = true; // Shows the collision boxes used in collision detection when Gizmos are turned on in editor mode
+
+    // Delegates used for vehicle collision events
+    public delegate void AnyVehicleCollisionEvent(Vehicle vehicle, Collision collision);
+    public delegate void VehicleCollisionEvent(Collision collision);
+
+    public static event AnyVehicleCollisionEvent OnAnyVehicleCollision; // Used to detect any vehicles being in a collision
+    public event VehicleCollisionEvent OnVehicleCollision; // Used to detect a vehicle collision
 
     private void Awake()
     {
@@ -44,6 +52,7 @@ public class Vehicle : MonoBehaviour
         UpdateRouteData();
 
         vehicleCollider = GetComponent<BoxCollider>();
+        collisionMask = ~LayerMask.GetMask("Vehicle Ignore");
     }
 
     // Can be called to update the vehicles current road data
@@ -105,7 +114,7 @@ public class Vehicle : MonoBehaviour
             RoadPoint roadPoint = path[(path.Length + currentPoint + (lane == Lane.LEFT ? i : -i)) % path.Length];
 
             // Get all colliders not in the ignored layer, roads could probably use this layer if needed
-            Collider[] colliders = Physics.OverlapBox(roadPoint.Position + vehicleCollider.center, .5f * vehicleCollider.size, roadPoint.Rotation, ~LayerMask.GetMask("Vehicle Ignore"));     
+            Collider[] colliders = Physics.OverlapBox(roadPoint.Position + vehicleCollider.center, .5f * vehicleCollider.size, roadPoint.Rotation, collisionMask);     
             
             // For each collider in the immediate path of the vehicle (except the vehicle itself), check the exact distance away from it
             // nearestObstructionDistance is always the distance from the closest point of this vehicle to the closest point of the closest collider
@@ -128,6 +137,17 @@ public class Vehicle : MonoBehaviour
 
         // Return the final calculated speed
         return Mathf.Min(road.SpeedLimit, topSpeed * turningFactor * obstructionFactor);
+    }
+
+    // When the vehicle collides with something else, the vehicle collision events should be invoked
+    // To properly register a collision, either the vehicle or the collided object must have a RigidBody component
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collisionMask == (collisionMask | (1 << collision.gameObject.layer)))
+        {
+            OnAnyVehicleCollision?.Invoke(this, collision);
+            OnVehicleCollision?.Invoke(collision);
+        }
     }
 
     // Shows the developer how the vehicles slow down at corners and obstructions
