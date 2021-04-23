@@ -40,20 +40,20 @@ public class TrafficLight : MonoBehaviour
         if (modeSetting[mode] && currentMode == 0)
         {
             currentMode = 1;
-            bulbs.SetLights(true, true, false);
+            if (bulbs != null) bulbs.SetLights(true, true, false);
             yield return new WaitForSeconds(transitionTime);
             currentMode = 2;
-            bulbs.SetLights(false, false, true);
+            if (bulbs != null) bulbs.SetLights(false, false, true);
             blockingCollider.enabled = false;
         }
         else if (!modeSetting[mode] && currentMode == 2)
         {
             currentMode = 3;
-            bulbs.SetLights(false, true, false);
+            if (bulbs != null) bulbs.SetLights(false, true, false);
             blockingCollider.enabled = true;
             yield return new WaitForSeconds(transitionTime);
             currentMode = 0;
-            bulbs.SetLights(true, false, false);
+            if (bulbs != null) bulbs.SetLights(true, false, false);
         }
     }
 }

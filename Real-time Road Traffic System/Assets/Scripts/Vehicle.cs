@@ -122,14 +122,18 @@ public class Vehicle : MonoBehaviour
             RoadPoint roadPoint = path[(path.Length + currentPoint + (lane == Lane.LEFT ? i : -i)) % path.Length];
 
             // Get all colliders not in the ignored layer, roads could probably use this layer if needed
-            Collider[] colliders = Physics.OverlapBox(roadPoint.Position + vehicleCollider.center, .5f * vehicleCollider.size, roadPoint.Rotation, collisionMask);     
+            Collider[] colliders = Physics.OverlapBox(roadPoint.Position + vehicleCollider.center,
+                .5f * vehicleCollider.size,
+                roadPoint.Rotation,
+                collisionMask);     
             
             // For each collider in the immediate path of the vehicle (except the vehicle itself), check the exact distance away from it
             // nearestObstructionDistance is always the distance from the closest point of this vehicle to the closest point of the closest collider
             foreach (Collider c in colliders)
             {
                 if (c.transform != transform)
-                    nearestObstructionDistance = Mathf.Min(nearestObstructionDistance, Vector3.Distance(vehicleCollider.ClosestPoint(c.transform.position), c.ClosestPoint(transform.position)));
+                    nearestObstructionDistance = Mathf.Min(nearestObstructionDistance, 
+                        Vector3.Distance(vehicleCollider.ClosestPoint(c.transform.position), c.ClosestPoint(transform.position)));
             }
         }
         // Use the obstruction distance / the checked distance to get 'x'
