@@ -332,18 +332,16 @@ public class RoadNetworkEditor : Editor
             showEquidistantPointsFoldout = EditorGUILayout.Foldout(showEquidistantPointsFoldout, "Equidistant Point Settings");
 
             float previousEPD = selectedRoad.equidistantPointDistance;
-            float previousEPA = selectedRoad.equidistantPointAccuracy;
             if (showEquidistantPointsFoldout)
             {
                 selectedRoad.equidistantPointDistance = EditorGUILayout.Slider("Distance between points", selectedRoad.equidistantPointDistance, 0.05f, 4f);
-                selectedRoad.equidistantPointAccuracy = EditorGUILayout.Slider("Point calculation accuracy", selectedRoad.equidistantPointAccuracy, 0f, 1f);
 
                 // Equidistant point information
                 EditorGUILayout.LabelField("Number of points: ", selectedRoad.equidistantPoints.Length.ToString());
             }
 
             // Manually generate mesh
-            if (GUILayout.Button("Generate Road Mesh") || previousEPD != selectedRoad.equidistantPointDistance || previousEPA != selectedRoad.equidistantPointAccuracy)
+            if (GUILayout.Button("Generate Road Mesh") || previousEPD != selectedRoad.equidistantPointDistance)
                 GenerateMesh();
 
             // Mesh data
@@ -426,7 +424,7 @@ public class RoadNetworkEditor : Editor
 
             float nodePerimeterLength = Vector3.Distance(selectedRoad[0], selectedRoad[1]) + Vector3.Distance(selectedRoad[1], selectedRoad[2]) + Vector3.Distance(selectedRoad[2], selectedRoad[3]);
             float estimatedLength = Vector3.Distance(selectedRoad[0], selectedRoad[3]) + nodePerimeterLength * 0.5f;
-            int divisions = Mathf.CeilToInt(estimatedLength * selectedRoad.equidistantPointAccuracy * 10);
+            int divisions = Mathf.CeilToInt(estimatedLength * 50);
 
             // Keep placing points along the curve until the end of the road section
             float time = 0;
@@ -446,7 +444,10 @@ public class RoadNetworkEditor : Editor
 
                     // If there are too many points in the road cancel the operation and return
                     if (positions.Count > 65536)
+                    {
+                        Debug.LogError("Too many points in the road (" + positions.Count + "). The maximum amount is 65536. Decrease the equidistant point distance or reduce the complexity of the road.");
                         return false;
+                    }
                 }
                 previousPoint = point;
             }

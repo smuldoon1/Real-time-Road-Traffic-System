@@ -43,10 +43,6 @@ public class Road : MonoBehaviour
     [HideInInspector]
     public float equidistantPointDistance;
 
-    // The accuracy of the equidistant point calculation, does not affect computation
-    [HideInInspector]
-    public float equidistantPointAccuracy;
-
     // Places the four initial control nodes at arbitrary positions
     public void InitialiseRoad(Vector3 centre)
     {
@@ -61,7 +57,6 @@ public class Road : MonoBehaviour
         roadWidth = 4f;
         textureTiling = 0.07f;
         equidistantPointDistance = 1f;
-        equidistantPointAccuracy = 1f;
         gameObject.layer = 9;
     }
 
