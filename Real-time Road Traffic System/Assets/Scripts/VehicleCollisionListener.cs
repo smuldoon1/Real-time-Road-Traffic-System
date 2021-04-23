@@ -11,11 +11,11 @@ public class VehicleCollisionListener : MonoBehaviour
         if (tl != null)
         {
             if (tl.GetMode == 0 || tl.GetMode == 1)
-                Debug.Log("Red light ran!" + vehicle.name + " ran a red light.");
+                Debug.Log("Red light ran! " + vehicle.name + " ran a red light.");
         }
         else
-            Debug.Log("Vehicle collision!" + vehicle.name + " collided with " + collision.gameObject.name);
-        Debug.Break();
+            Debug.Log("Vehicle collision! " + vehicle.name + " collided with " + collision.gameObject.name);
+        //Debug.Break(); Use this to pause the editor upon a collision occuring, useful for determining where a collision has happened
     }
 
     private void OnEnable()

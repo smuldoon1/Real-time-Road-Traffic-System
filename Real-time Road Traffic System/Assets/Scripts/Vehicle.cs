@@ -30,6 +30,8 @@ public class Vehicle : MonoBehaviour
     BoxCollider vehicleCollider; // All vehicles need a collider so that other vehicles can detect them
     LayerMask collisionMask; // Collision mask used to ignore colliders in vehicle collision detection
 
+    public bool randomiseStartingPosition = true; // Randomises the positions of each vehicle when the application is ran
+
     public bool showCollisionBounds = true; // Shows the collision boxes used in collision detection when Gizmos are turned on in editor mode
 
     // Delegates used for vehicle collision events
@@ -48,12 +50,16 @@ public class Vehicle : MonoBehaviour
         }
 
         road = roadNetwork.roads[0];
-        currentPoint = Random.Range(0, road.equidistantPoints.Length);
-        lane = (Lane)Random.Range(0, 2);
         UpdateRouteData();
 
         vehicleCollider = GetComponent<BoxCollider>();
         collisionMask = ~LayerMask.GetMask("Vehicle Ignore");
+
+        if (randomiseStartingPosition)
+        {
+            currentPoint = Random.Range(0, road.equidistantPoints.Length);
+            lane = (Lane)Random.Range(0, 2);
+        }
     }
 
     // Can be called to update the vehicles current road data
