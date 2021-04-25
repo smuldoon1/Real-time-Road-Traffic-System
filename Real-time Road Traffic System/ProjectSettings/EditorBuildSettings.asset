@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Sample Scene.unity
+    path: Assets/Road Traffic System/Scenes/Sample Scene.unity
     guid: f9bf9a37a1278f84ebd2de075dbbf14d
   m_configObjects: {}

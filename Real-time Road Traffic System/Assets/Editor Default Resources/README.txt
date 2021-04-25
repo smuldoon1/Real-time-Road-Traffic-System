@@ -1,0 +1,1 @@
+The Editor Default Resources folder always be in the root Assets folder
